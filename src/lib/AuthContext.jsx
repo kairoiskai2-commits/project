@@ -1,5 +1,5 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { base44 as supabaseClient } from '@/api/base44Client';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { base44 as apiClient } from '@/api/base44Client';
 
 const AuthContext = createContext();
 
@@ -8,68 +8,64 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [authError, setAuthError] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  useEffect(() => {
-    initializeAuth();
-  }, []);
-
-  const resolveUserRole = async (authUser) => {
-    if (!authUser?.email) return authUser;
-    if (authUser.role) return authUser;
-
-    try {
-      const userRecords = await supabaseClient.entities.users.filter({ email: authUser.email });
-      const matched = Array.isArray(userRecords) ? userRecords[0] : null;
-      if (matched && matched.role) {
-        return { ...authUser, role: matched.role };
-      }
-    } catch (error) {
-      console.warn('Role resolution failed:', error);
-    }
-    return authUser;
+  const formatError = (error) => {
+    if (!error) return null;
+    if (typeof error === 'string') return { message: error };
+    return {
+      message: error.message || String(error),
+      type: error.type,
+    };
   };
 
-  const initializeAuth = async () => {
+  const initializeAuth = useCallback(async () => {
     try {
       setAuthError(null);
       setIsLoadingAuth(true);
 
-      const isLoggedIn = await supabaseClient.auth.isAuthenticated();
+      const isLoggedIn = await apiClient.auth.isAuthenticated();
       if (isLoggedIn) {
-        const currentUser = await supabaseClient.auth.me();
-        const userWithRole = await resolveUserRole(currentUser);
-        setUser(userWithRole);
+        const currentUser = await apiClient.auth.me();
+        setUser(currentUser);
         setIsAuthenticated(true);
       } else {
+        setUser(null);
         setIsAuthenticated(false);
       }
     } catch (error) {
       console.error('Auth initialization failed:', error);
       setUser(null);
       setIsAuthenticated(false);
+      setAuthError(formatError(error));
     } finally {
       setIsLoadingAuth(false);
+      setAuthChecked(true);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
 
   const login = async (email, password) => {
     try {
       setAuthError(null);
       setIsLoadingAuth(true);
 
-      const response = await supabaseClient.auth.login(email, password);
-      const currentUser = await supabaseClient.auth.me();
-      const userWithRole = await resolveUserRole(currentUser);
-
-      setUser(userWithRole);
+      await apiClient.auth.login(email, password);
+      const currentUser = await apiClient.auth.me();
+      setUser(currentUser);
       setIsAuthenticated(true);
-      return response;
+      return currentUser;
     } catch (error) {
-      setAuthError(error.message || 'Login failed');
+      const formatted = formatError(error);
+      setAuthError(formatted);
       setIsAuthenticated(false);
-      throw error;
+      throw formatted;
     } finally {
       setIsLoadingAuth(false);
+      setAuthChecked(true);
     }
   };
 
@@ -78,51 +74,53 @@ export const AuthProvider = ({ children }) => {
       setAuthError(null);
       setIsLoadingAuth(true);
 
-      const response = await supabaseClient.auth.signup(email, password, { full_name: fullName });
-      const isLoggedIn = await supabaseClient.auth.isAuthenticated();
-
-      if (!isLoggedIn) {
-        await login(email, password);
-        return response;
-      }
-
-      const currentUser = await supabaseClient.auth.me();
-      const userWithRole = await resolveUserRole(currentUser);
-      setUser(userWithRole);
+      await apiClient.auth.signup(email, password, { full_name: fullName });
+      const currentUser = await apiClient.auth.me();
+      setUser(currentUser);
       setIsAuthenticated(true);
-      return response;
+      return currentUser;
     } catch (error) {
-      setAuthError(error.message || 'Signup failed');
+      const formatted = formatError(error);
+      setAuthError(formatted);
       setIsAuthenticated(false);
-      throw error;
+      throw formatted;
     } finally {
       setIsLoadingAuth(false);
+      setAuthChecked(true);
     }
   };
 
   const logout = async (shouldRedirect = true) => {
     try {
-      await supabaseClient.auth.logout();
+      await apiClient.auth.logout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
       setUser(null);
       setIsAuthenticated(false);
-      if (shouldRedirect) {
+      if (shouldRedirect && typeof window !== 'undefined') {
         window.location.href = '/login';
       }
     }
   };
+
+  const checkUserAuth = useCallback(async () => {
+    if (!authChecked) {
+      await initializeAuth();
+    }
+  }, [authChecked, initializeAuth]);
 
   const value = {
     user,
     isAuthenticated,
     isLoadingAuth,
     authError,
+    authChecked,
     login,
     signup,
     logout,
-    apiClient: supabaseClient,
+    checkUserAuth,
+    apiClient,
   };
 
   return (
