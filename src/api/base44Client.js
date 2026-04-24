@@ -556,6 +556,20 @@ const integrations = {
         success: true
       }
     },
+    InvokeLLM: async (params) => {
+      try {
+        // Use the AI chat function for LLM invocations
+        const messages = [{ content: params.prompt }];
+        const response = await integrations.AI.chat(messages, {
+          max_length: params.max_tokens || 500,
+          temperature: params.temperature || 0.7,
+        });
+        return response.response || response;
+      } catch (error) {
+        console.error('InvokeLLM failed:', error);
+        return 'Sorry, I am unable to respond right now. Please try again later.';
+      }
+    },
   },
   AI: {
     chat: async (messages, options = {}) => {
