@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useLanguage, LANGUAGES } from './LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 
 import {
   Sun, Moon, Globe, Menu, X, Home, Compass, Map,
@@ -73,7 +74,7 @@ const ALL_NAV = [...NAV_PRIMARY, ...NAV_MORE_FLAT];
 
 export default function Header() {
   const { language, setLanguage, theme, setTheme, t, isRTL } = useLanguage();
-  const [user, setUser] = useState(null);
+  const { user, isAuthenticated, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [megaOpen, setMegaOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -81,14 +82,6 @@ export default function Header() {
   const megaRef = useRef(null);
   const langRef = useRef(null);
   const [langOpen, setLangOpen] = useState(false);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const isAuth = await db.auth.isAuthenticated();
-      if (isAuth) { const u = await db.auth.me(); setUser(u); }
-    };
-    checkAuth();
-  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -485,7 +478,7 @@ export default function Header() {
                         <p className="text-stone-500 text-xs font-mono truncate">{user.email}</p>
                       </div>
                     </div>
-                    <button onClick={() => { db.auth.logout(); setMobileOpen(false); }}
+                    <button onClick={() => { logout(); setMobileOpen(false); }}
                       className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border text-red-400 text-sm font-bold active:scale-95"
                       style={{ borderColor: 'rgba(248,113,113,0.25)', background: 'rgba(248,113,113,0.06)' }}>
                       <LogOut className="w-4 h-4" /> {t('logout')}
