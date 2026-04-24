@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Travel Explorer App
 
 A modern travel and exploration web application built with React, Vite, and Tailwind CSS. Deploy to Vercel, Netlify, or any standard web hosting provider.
@@ -256,3 +257,7 @@ All Base44-specific code has been removed. You now have full control over your b
 ---
 
 **Ready to deploy? Start with the [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)**
+=======
+# project
+project for competition
+>>>>>>> 10e8ea5cfe8c76a2252806af0897677718a6c215
