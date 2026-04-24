@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { apiClient } from '@/api/apiClient';
+import { base44 as supabaseClient } from '@/api/base44Client';
 
 const AuthContext = createContext();
 
@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
     if (authUser.role) return authUser;
 
     try {
-      const userRecords = await apiClient.entities.User.filter({ email: authUser.email });
+      const userRecords = await supabaseClient.entities.users.filter({ email: authUser.email });
       const matched = Array.isArray(userRecords) ? userRecords[0] : null;
       if (matched && matched.role) {
         return { ...authUser, role: matched.role };
@@ -32,13 +32,11 @@ export const AuthProvider = ({ children }) => {
   const initializeAuth = async () => {
     try {
       setAuthError(null);
-      
-      // Check if there's a stored token
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        apiClient.setToken(token);
-        // Try to fetch current user
-        const currentUser = await apiClient.auth.me();
+      setIsLoadingAuth(true);
+
+      const isLoggedIn = await supabaseClient.auth.isAuthenticated();
+      if (isLoggedIn) {
+        const currentUser = await supabaseClient.auth.me();
         const userWithRole = await resolveUserRole(currentUser);
         setUser(userWithRole);
         setIsAuthenticated(true);
@@ -47,9 +45,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Auth initialization failed:', error);
-      // Clear invalid token
-      localStorage.removeItem('auth_token');
-      apiClient.setToken(null);
+      setUser(null);
       setIsAuthenticated(false);
     } finally {
       setIsLoadingAuth(false);
@@ -60,11 +56,11 @@ export const AuthProvider = ({ children }) => {
     try {
       setAuthError(null);
       setIsLoadingAuth(true);
-      
-      const response = await apiClient.auth.login(email, password);
-      const currentUser = await apiClient.auth.me();
+
+      const response = await supabaseClient.auth.login(email, password);
+      const currentUser = await supabaseClient.auth.me();
       const userWithRole = await resolveUserRole(currentUser);
-      
+
       setUser(userWithRole);
       setIsAuthenticated(true);
       return response;
@@ -81,17 +77,16 @@ export const AuthProvider = ({ children }) => {
     try {
       setAuthError(null);
       setIsLoadingAuth(true);
-      
-      const response = await apiClient.auth.signup(email, password, fullName);
-      let currentUser;
-      
-      if (response?.token || response?.access_token || response?.session?.access_token || response?.data?.session?.access_token) {
-        currentUser = await apiClient.auth.me();
-      } else {
+
+      const response = await supabaseClient.auth.signup(email, password, { full_name: fullName });
+      const isLoggedIn = await supabaseClient.auth.isAuthenticated();
+
+      if (!isLoggedIn) {
         await login(email, password);
         return response;
       }
 
+      const currentUser = await supabaseClient.auth.me();
       const userWithRole = await resolveUserRole(currentUser);
       setUser(userWithRole);
       setIsAuthenticated(true);
@@ -107,7 +102,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async (shouldRedirect = true) => {
     try {
-      await apiClient.auth.logout();
+      await supabaseClient.auth.logout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -127,7 +122,7 @@ export const AuthProvider = ({ children }) => {
     login,
     signup,
     logout,
-    apiClient,
+    apiClient: supabaseClient,
   };
 
   return (
