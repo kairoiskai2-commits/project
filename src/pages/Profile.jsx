@@ -3,8 +3,9 @@ import { db } from '@/api/apiClient';
 import React, { useState, useEffect, useRef } from 'react';
 
 import { useLanguage, LANGUAGES } from '@/components/LanguageContext';
-import { 
-  User, Mail, Shield, Calendar, Globe, Moon, Sun, 
+import { useAuth } from '@/lib/AuthContext';
+import {
+  User, Mail, Shield, Calendar, Globe, Moon, Sun,
   Eye, MapPin, Star, Camera, Loader2, Check, LogOut, Edit3, Image, MessageCircle, Users, Plane
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +17,7 @@ import { createPageUrl } from '@/utils';
 
 export default function Profile() {
   const { t, language, setLanguage, theme, setTheme } = useLanguage();
-  const [user, setUser] = useState(null);
+  const { user, logout, authChecked } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -26,23 +27,24 @@ export default function Profile() {
   const avatarRef = useRef(null);
 
   useEffect(() => {
-    const loadUser = async () => {
-      const isAuth = await db.auth.isAuthenticated();
-      if (!isAuth) { db.auth.redirectToLogin(); return; }
-      const u = await db.auth.me();
-      setUser(u);
+    if (!authChecked) return;
+    if (!user) {
+      window.location.href = '/login';
+      return;
+    }
 
-      const profiles = await db.entities.UserProfile.filter({ user_email: u.email });
+    const loadProfile = async () => {
+      const profiles = await db.entities.UserProfile.filter({ user_email: user.email });
       if (profiles.length > 0) {
         setProfile(profiles[0]);
         setForm({ display_name: profiles[0].display_name || '', bio: profiles[0].bio || '', location: profiles[0].location || '' });
       } else {
-        setForm({ display_name: u.full_name || '', bio: '', location: '' });
+        setForm({ display_name: user.fullName || '', bio: '', location: '' });
       }
       setLoading(false);
     };
-    loadUser();
-  }, []);
+    loadProfile();
+  }, [user, authChecked]);
 
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -149,7 +151,7 @@ export default function Profile() {
                 <Edit3 className="w-3.5 h-3.5" />
                 تعديل
               </button>
-              <button onClick={() => db.auth.logout()}
+              <button onClick={() => logout()}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-2xl border border-[rgba(255,100,100,0.2)] text-red-400 text-sm font-bold hover:bg-red-500/10 transition-colors">
                 <LogOut className="w-3.5 h-3.5" />
                 خروج

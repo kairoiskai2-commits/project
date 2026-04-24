@@ -1,0 +1,28 @@
+{
+  "users": [
+    {
+      "id": "admin-001",
+      "email": "karasmina2511@gmail.com",
+      "fullName": "Admin User",
+      "passwordHash": "MjUxMTIwMTJrJCRhZG1pbg==",
+      "role": "admin",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "isActive": true
+    }
+  ],
+  "userProfiles": [],
+  "posts": [],
+  "comments": [],
+  "favorites": [],
+  "places": [],
+  "familyTrips": [],
+  "memories": [],
+  "chatMessages": [],
+  "announcements": [],
+  "settings": {
+    "siteName": "Egypt Wonders",
+    "siteDescription": "Discover the wonders of Egypt",
+    "maintenanceMode": false,
+    "maxUsers": 100
+  }
+}

@@ -262,14 +262,6 @@ export default function Header() {
               )}
             </AnimatePresence>
           </div>
-
-          {user?.role === 'admin' && (
-            <Link to={createPageUrl('Admin')}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black text-stone-900 ml-1"
-              style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 12px rgba(201,150,58,0.45)' }}>
-              <Shield className="w-3.5 h-3.5" /> Admin
-            </Link>
-          )}
         </nav>
 
         {/* Right controls */}
@@ -320,14 +312,23 @@ export default function Header() {
 
           {/* User / Login */}
           {user ? (
-            <Link to={createPageUrl('Profile')}
-              className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-xl hover:bg-[rgba(201,150,58,0.08)] transition-all">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black"
-                style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 8px rgba(201,150,58,0.5)' }}>
-                {user.full_name?.[0]?.toUpperCase() || '?'}
-              </div>
-              <span className="text-xs font-bold text-stone-400 max-w-[60px] truncate">{user.full_name?.split(' ')[0] || 'Me'}</span>
-            </Link>
+            <div className="hidden sm:flex items-center gap-2">
+              {user.role === 'admin' && (
+                <Link to={createPageUrl('Admin')}
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-xl text-stone-900 text-xs font-black"
+                  style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 8px rgba(201,150,58,0.4)' }}>
+                  <Shield className="w-3.5 h-3.5" /> Admin
+                </Link>
+              )}
+              <Link to={createPageUrl('Profile')}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-xl hover:bg-[rgba(201,150,58,0.08)] transition-all">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black"
+                  style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 8px rgba(201,150,58,0.5)' }}>
+                  {user.full_name?.[0]?.toUpperCase() || '?'}
+                </div>
+                <span className="text-xs font-bold text-stone-400 max-w-[60px] truncate">{user.full_name?.split(' ')[0] || 'Me'}</span>
+              </Link>
+            </div>
           ) : (
             <button onClick={() => db.auth.redirectToLogin()}
               className="flex items-center gap-1 px-3 py-2 rounded-xl text-stone-900 text-xs font-black"
@@ -478,6 +479,13 @@ export default function Header() {
                         <p className="text-stone-500 text-xs font-mono truncate">{user.email}</p>
                       </div>
                     </div>
+                    {user.role === 'admin' && (
+                      <Link to={createPageUrl('Admin')} onClick={() => setMobileOpen(false)}
+                        className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-stone-900 text-sm font-black"
+                        style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 12px rgba(201,150,58,0.3)' }}>
+                        <Shield className="w-4 h-4" /> Admin Panel
+                      </Link>
+                    )}
                     <button onClick={() => { logout(); setMobileOpen(false); }}
                       className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border text-red-400 text-sm font-bold active:scale-95"
                       style={{ borderColor: 'rgba(248,113,113,0.25)', background: 'rgba(248,113,113,0.06)' }}>
