@@ -57,29 +57,34 @@ export default function Social() {
 
   useEffect(() => {
     const init = async () => {
-      const isAuth = await db.auth.isAuthenticated();
-      if (!isAuth) { db.auth.redirectToLogin(); return; }
-      const me = await db.auth.me();
-      setUser(me);
+      try {
+        const isAuth = await db.auth.isAuthenticated();
+        if (!isAuth) { db.auth.redirectToLogin(); return; }
+        const me = await db.auth.me();
+        setUser(me);
 
-      const [allProfiles, sentF, receivedF] = await Promise.all([
-        db.entities.UserProfile.list('-created_date', 100),
-        db.entities.Friendship.filter({ requester_email: me.email }),
-        db.entities.Friendship.filter({ receiver_email: me.email }),
-      ]);
+        const [allProfiles, sentF, receivedF] = await Promise.all([
+          db.entities.UserProfile.list('-created_date', 100),
+          db.entities.Friendship.filter({ requester_email: me.email }),
+          db.entities.Friendship.filter({ receiver_email: me.email }),
+        ]);
 
-      // Find my own profile
-      const mine = allProfiles.find(p => p.user_email === me.email);
-      setMyProfile(mine || null);
+        // Find my own profile
+        const mine = allProfiles.find(p => p.user_email === me.email);
+        setMyProfile(mine || null);
 
-      // Other users' profiles (everyone else)
-      setProfiles(allProfiles.filter(p => p.user_email !== me.email));
+        // Other users' profiles (everyone else)
+        setProfiles(allProfiles.filter(p => p.user_email !== me.email));
 
-      const accepted = [...sentF, ...receivedF].filter(f => f.status === 'accepted');
-      setFriends(accepted);
-      setRequests(receivedF.filter(f => f.status === 'pending'));
-      setSentRequests(sentF.filter(f => f.status === 'pending').map(f => f.receiver_email));
-      setLoading(false);
+        const accepted = [...sentF, ...receivedF].filter(f => f.status === 'accepted');
+        setFriends(accepted);
+        setRequests(receivedF.filter(f => f.status === 'pending'));
+        setSentRequests(sentF.filter(f => f.status === 'pending').map(f => f.receiver_email));
+      } catch (error) {
+        console.error('Failed to load social data:', error);
+      } finally {
+        setLoading(false);
+      }
     };
     init();
   }, []);

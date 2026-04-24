@@ -60,10 +60,11 @@ export default function PlaceCard({ place, index = 0 }) {
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center"
-                style={{ background: `linear-gradient(135deg, ${cfg.glow}, rgba(8,6,4,0.9))` }}>
-                <span className="text-6xl opacity-60">{cfg.emoji}</span>
-              </div>
+              <img
+                src={`https://picsum.photos/seed/${place.id || encodeURIComponent(name)}/640/360`}
+                alt={name}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+              />
             )}
             {/* CRT scan overlay */}
             <div className="absolute inset-0 pointer-events-none opacity-30"

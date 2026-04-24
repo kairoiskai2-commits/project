@@ -1,7 +1,10 @@
 // API Client for standard REST backend
 // Replace the Backend URL in your environment or update the BASE_URL below
 
+import { base44 as base44Client } from './base44Client';
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const useLocalFallback = !import.meta.env.VITE_API_BASE_URL;
 
 class APIClient {
   constructor() {
@@ -315,6 +318,7 @@ class APIClient {
   };
 }
 
-export const db = new APIClient();
+const db = useLocalFallback ? base44Client : new APIClient();
 export const apiClient = db;
+export { db };
 export default db;

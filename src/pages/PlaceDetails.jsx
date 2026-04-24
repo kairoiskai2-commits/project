@@ -45,28 +45,32 @@ export default function PlaceDetails() {
     const loadPlace = async () => {
       if (!placeId) return;
       setLoading(true);
-      
-      const placeData = await db.entities.Place.filter({ id: placeId });
-      if (placeData.length > 0) {
-        const p = placeData[0];
-        setPlace(p);
-        
-        // Increment views
-        await db.entities.Place.update(p.id, { 
-          views_count: (p.views_count || 0) + 1 
-        });
+      try {
+        const placeData = await db.entities.Place.filter({ id: placeId });
+        if (placeData.length > 0) {
+          const p = placeData[0];
+          setPlace(p);
 
-        // Load related places
-        if (p.category) {
-          const related = await db.entities.Place.filter(
-            { category: p.category },
-            '-views_count',
-            5
-          );
-          setRelatedPlaces(related.filter(r => r.id !== p.id).slice(0, 4));
+          // Increment views
+          await db.entities.Place.update(p.id, {
+            views_count: (p.views_count || 0) + 1
+          });
+
+          // Load related places
+          if (p.category) {
+            const related = await db.entities.Place.filter(
+              { category: p.category },
+              '-views_count',
+              5
+            );
+            setRelatedPlaces(related.filter(r => r.id !== p.id).slice(0, 4));
+          }
         }
+      } catch (error) {
+        console.error('Failed to load place details:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     loadPlace();
   }, [placeId]);

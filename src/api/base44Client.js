@@ -48,11 +48,95 @@ const loadDatabase = async () => {
             isActive: true
           }
         ],
-        userProfiles: [],
+        userProfiles: [
+          {
+            id: "profile-001",
+            user_email: "karasmina2511@gmail.com",
+            display_name: "Admin User",
+            bio: "مشرف التطبيق - اكتشف أفضل أماكن مصر واقترح إضافات جديدة.",
+            location: "القاهرة، مصر",
+            avatar_url: "https://picsum.photos/seed/admin/200/200",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        ],
         posts: [],
         comments: [],
         favorites: [],
-        places: [],
+        places: [
+          {
+            id: "place-giza-001",
+            name_en: "Pyramids of Giza",
+            name_ar: "أهرامات الجيزة",
+            description_en: "The iconic Pyramids of Giza are Egypt’s most famous ancient monuments, built as tombs for pharaohs over 4,500 years ago.",
+            description_ar: "أهرامات الجيزة الأيقونية هي أشهر آثار مصر القديمة، بُنيت كمقابر للفراعنة قبل أكثر من 4500 عام.",
+            category: "archaeological",
+            location: "Giza, Egypt",
+            latitude: 29.9792,
+            longitude: 31.1342,
+            image_url: "https://picsum.photos/seed/giza/800/600",
+            wikipedia_url: "https://en.wikipedia.org/wiki/Giza_pyramid_complex",
+            is_featured: true,
+            views_count: 1523,
+            tags: ["pyramids", "giza", "ancient"],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: "place-luxor-001",
+            name_en: "Luxor Temple",
+            name_ar: "معبد الأقصر",
+            description_en: "Luxor Temple is a large Ancient Egyptian temple complex located on the east bank of the Nile in Luxor.",
+            description_ar: "معبد الأقصر هو مجمع معبد مصري قديم كبير يقع على الضفة الشرقية للنيل في الأقصر.",
+            category: "historical",
+            location: "Luxor, Egypt",
+            latitude: 25.7000,
+            longitude: 32.6396,
+            image_url: "https://picsum.photos/seed/luxor/800/600",
+            wikipedia_url: "https://en.wikipedia.org/wiki/Luxor_Temple",
+            is_featured: true,
+            views_count: 1140,
+            tags: ["luxor", "temple", "ancient"],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: "place-karnak-001",
+            name_en: "Karnak Temple",
+            name_ar: "معبد الكرنك",
+            description_en: "Karnak Temple is one of the largest temple complexes in the world, with towering columns and ancient hieroglyphs.",
+            description_ar: "معبد الكرنك هو أحد أكبر مجمعات المعابد في العالم، مع أعمدة شاهقة ونقوش هيروغليفية قديمة.",
+            category: "archaeological",
+            location: "Luxor, Egypt",
+            latitude: 25.7188,
+            longitude: 32.6573,
+            image_url: "https://picsum.photos/seed/karnak/800/600",
+            wikipedia_url: "https://en.wikipedia.org/wiki/Karnak",
+            is_featured: false,
+            views_count: 980,
+            tags: ["karnak", "temple", "ancient"],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: "place-aswan-001",
+            name_en: "Aswan",
+            name_ar: "أسوان",
+            description_en: "Aswan is a beautiful Nile city known for its relaxed island scenery, temples, and vibrant market.",
+            description_ar: "أسوان هي مدينة نيلية جميلة مع مناظر جزيرة خضراء، معابد، وسوق نابض بالحياة.",
+            category: "natural",
+            location: "Aswan, Egypt",
+            latitude: 24.0908,
+            longitude: 32.8998,
+            image_url: "https://picsum.photos/seed/aswan/800/600",
+            wikipedia_url: "https://en.wikipedia.org/wiki/Aswan",
+            is_featured: false,
+            views_count: 720,
+            tags: ["aswan", "nile", "natural"],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        ],
         familyTrips: [],
         memories: [],
         chatMessages: [],
@@ -278,7 +362,7 @@ const auth = {
 // Entities methods - using local database
 const entities = new Proxy({}, {
   get: (target, tableName) => ({
-    filter: async (filters = {}, options = {}) => {
+    list: async (sort = '', limit = 100) => {
       try {
         const db = await loadDatabase()
         if (!db) {
@@ -287,6 +371,63 @@ const entities = new Proxy({}, {
         }
 
         let items = db[tableName] || []
+        if (typeof sort === 'object' && sort !== null) {
+          const options = sort
+          if (options.orderBy) {
+            const ascending = options.ascending !== false
+            items.sort((a, b) => {
+              const aVal = a[options.orderBy]
+              const bVal = b[options.orderBy]
+              if (aVal < bVal) return ascending ? -1 : 1
+              if (aVal > bVal) return ascending ? 1 : -1
+              return 0
+            })
+          }
+          if (options.limit) {
+            const offset = options.offset || 0
+            items = items.slice(offset, offset + options.limit)
+          }
+        } else {
+          if (typeof sort === 'string' && sort.trim()) {
+            const ascending = !sort.startsWith('-')
+            const orderBy = sort.replace(/^-/, '')
+            items.sort((a, b) => {
+              const aVal = a[orderBy]
+              const bVal = b[orderBy]
+              if (aVal < bVal) return ascending ? -1 : 1
+              if (aVal > bVal) return ascending ? 1 : -1
+              return 0
+            })
+          }
+          if (typeof limit === 'number') {
+            items = items.slice(0, limit)
+          }
+        }
+
+        return items
+      } catch (error) {
+        console.error(`Error listing ${tableName}:`, error)
+        return []
+      }
+    },
+    filter: async (filters = {}, sort = '', limit = 100) => {
+      try {
+        const db = await loadDatabase()
+        if (!db) {
+          console.warn(`Database not available for ${tableName}, returning empty array`)
+          return []
+        }
+
+        let items = db[tableName] || []
+
+        // Accept legacy signature filter(filters, sort, limit)
+        const options = typeof sort === 'string'
+          ? {
+              orderBy: sort.replace(/^-/, ''),
+              ascending: !sort.startsWith('-'),
+              limit,
+            }
+          : sort || {}
 
         // Apply filters
         Object.entries(filters).forEach(([key, value]) => {

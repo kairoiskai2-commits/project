@@ -46,53 +46,59 @@ export default function Search() {
     setWikiThumbnails({});
     setHasSearched(true);
 
-    // Search local database
-    const allPlaces = await db.entities.Place.list('-views_count', 300);
-    const searchTerm = query.toLowerCase();
-    const filtered = allPlaces.filter(place =>
-      place.name_ar?.toLowerCase().includes(searchTerm) ||
-      place.name_en?.toLowerCase().includes(searchTerm) ||
-      place.name_fr?.toLowerCase().includes(searchTerm) ||
-      place.description_en?.toLowerCase().includes(searchTerm) ||
-      place.category?.toLowerCase().includes(searchTerm)
-    );
-    setLocalResults(filtered);
-
-    // If local results found, show local tab first; else switch to wikipedia
-    if (filtered.length === 0) setActiveTab('wikipedia');
-    else setActiveTab('local');
-
-    // Search Wikipedia without forcing Egypt suffix so results are more relevant
-    const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*&srlimit=12&srprop=snippet|wordcount`;
-    const res = await fetch(wikiUrl).then(r => r.json()).catch(() => ({ query: { search: [] } }));
-    const results = res.query?.search || [];
-    setWikiResults(results);
-
-    // Check which ones are already in DB (by name)
-    const existing = {};
-    for (const r of results) {
-      const found = allPlaces.find(p =>
-        p.name_en?.toLowerCase() === r.title.toLowerCase()
+    try {
+      // Search local database
+      const allPlaces = await db.entities.Place.list('-views_count', 300);
+      const searchTerm = query.toLowerCase();
+      const filtered = allPlaces.filter(place =>
+        place.name_ar?.toLowerCase().includes(searchTerm) ||
+        place.name_en?.toLowerCase().includes(searchTerm) ||
+        place.name_fr?.toLowerCase().includes(searchTerm) ||
+        place.description_en?.toLowerCase().includes(searchTerm) ||
+        place.category?.toLowerCase().includes(searchTerm)
       );
-      if (found) existing[r.title] = true;
-    }
-    setExistingPlaces(existing);
+      setLocalResults(filtered);
 
-    // Fetch thumbnails for Wikipedia results
-    if (results.length > 0) {
-      const titles = results.map(r => r.title).join('|');
-      const thumbUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titles)}&prop=pageimages&pithumbsize=200&format=json&origin=*`;
-      const thumbData = await fetch(thumbUrl).then(r => r.json()).catch(() => null);
-      if (thumbData?.query?.pages) {
-        const thumbMap = {};
-        Object.values(thumbData.query.pages).forEach(page => {
-          if (page.thumbnail) thumbMap[page.title] = page.thumbnail.source;
-        });
-        setWikiThumbnails(thumbMap);
+      // If local results found, show local tab first; else switch to wikipedia
+      if (filtered.length === 0) setActiveTab('wikipedia');
+      else setActiveTab('local');
+
+      // Search Wikipedia without forcing Egypt suffix so results are more relevant
+      const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*&srlimit=12&srprop=snippet|wordcount`;
+      const res = await fetch(wikiUrl).then(r => r.json()).catch(() => ({ query: { search: [] } }));
+      const results = res.query?.search || [];
+      setWikiResults(results);
+
+      // Check which ones are already in DB (by name)
+      const existing = {};
+      for (const r of results) {
+        const found = allPlaces.find(p =>
+          p.name_en?.toLowerCase() === r.title.toLowerCase()
+        );
+        if (found) existing[r.title] = true;
       }
-    }
+      setExistingPlaces(existing);
 
-    setSearching(false);
+      // Fetch thumbnails for Wikipedia results
+      if (results.length > 0) {
+        const titles = results.map(r => r.title).join('|');
+        const thumbUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titles)}&prop=pageimages&pithumbsize=200&format=json&origin=*`;
+        const thumbData = await fetch(thumbUrl).then(r => r.json()).catch(() => null);
+        if (thumbData?.query?.pages) {
+          const thumbMap = {};
+          Object.values(thumbData.query.pages).forEach(page => {
+            if (page.thumbnail) thumbMap[page.title] = page.thumbnail.source;
+          });
+          setWikiThumbnails(thumbMap);
+        }
+      }
+    } catch (error) {
+      console.error('Search failed:', error);
+      setWikiResults([]);
+      setExistingPlaces({});
+    } finally {
+      setSearching(false);
+    }
   };
 
   const sortedLocalResults = [...localResults].sort((a, b) => {

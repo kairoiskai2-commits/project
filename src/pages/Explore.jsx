@@ -52,11 +52,16 @@ export default function Explore() {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      let data = category === 'all'
-        ? await db.entities.Place.list(sortBy, 60)
-        : await db.entities.Place.filter({ category }, sortBy, 60);
-      setPlaces(data);
-      setLoading(false);
+      try {
+        const data = category === 'all'
+          ? await db.entities.Place.list(sortBy, 60)
+          : await db.entities.Place.filter({ category }, sortBy, 60);
+        setPlaces(data);
+      } catch (error) {
+        console.error('Failed to load places:', error);
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, [category, sortBy]);

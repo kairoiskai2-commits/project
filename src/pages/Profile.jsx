@@ -34,14 +34,19 @@ export default function Profile() {
     }
 
     const loadProfile = async () => {
-      const profiles = await db.entities.UserProfile.filter({ user_email: user.email });
-      if (profiles.length > 0) {
-        setProfile(profiles[0]);
-        setForm({ display_name: profiles[0].display_name || '', bio: profiles[0].bio || '', location: profiles[0].location || '' });
-      } else {
-        setForm({ display_name: user.fullName || '', bio: '', location: '' });
+      try {
+        const profiles = await db.entities.UserProfile.filter({ user_email: user.email });
+        if (profiles.length > 0) {
+          setProfile(profiles[0]);
+          setForm({ display_name: profiles[0].display_name || '', bio: profiles[0].bio || '', location: profiles[0].location || '' });
+        } else {
+          setForm({ display_name: user.fullName || '', bio: '', location: '' });
+        }
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     loadProfile();
   }, [user, authChecked]);
