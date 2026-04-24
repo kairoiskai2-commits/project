@@ -8,7 +8,8 @@ import { useLanguage } from '@/components/LanguageContext';
 import PlaceCard from '@/components/PlaceCard';
 import {
   Filter, Loader2, Grid3X3, List, Star, Clock, Eye,
-  Zap, Search, SlidersHorizontal, X, TrendingUp
+  Zap, Search, SlidersHorizontal, X, TrendingUp,
+  MapPin, Plus, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -36,6 +37,10 @@ export default function Explore() {
   const [sortBy, setSortBy] = useState('-created_date');
   const [viewMode, setViewMode] = useState('grid');
   const [search, setSearch] = useState('');
+  const [mapsSearch, setMapsSearch] = useState('');
+  const [mapsResults, setMapsResults] = useState([]);
+  const [mapsLoading, setMapsLoading] = useState(false);
+  const [showMapsSearch, setShowMapsSearch] = useState(false);
 
   useEffect(() => {
     // Check URL params for category
@@ -59,6 +64,49 @@ export default function Explore() {
   const filtered = places.filter(p =>
     !search || p.name?.toLowerCase().includes(search.toLowerCase()) || p.location?.toLowerCase().includes(search.toLowerCase())
   );
+
+  // FREE MAPS SEARCH FUNCTION
+  const searchMaps = async () => {
+    if (!mapsSearch.trim()) return;
+
+    setMapsLoading(true);
+    try {
+      const result = await db.integrations.External.maps('search', {
+        query: mapsSearch,
+        limit: 5
+      });
+
+      if (result.success) {
+        setMapsResults(result.places || []);
+        setShowMapsSearch(true);
+      }
+    } catch (error) {
+      console.error('Maps search failed:', error);
+    }
+    setMapsLoading(false);
+  };
+
+  // AUTO CREATE PLACE FROM WIKIPEDIA
+  const autoCreatePlace = async (placeName) => {
+    try {
+      const result = await db.integrations.External.wikipediaPlaces('create', {
+        placeName: placeName,
+        autoCreate: true
+      });
+
+      if (result.success && result.auto_created) {
+        // Reload places to show the new one
+        const updatedPlaces = await db.entities.Place.list(sortBy, 60);
+        setPlaces(updatedPlaces);
+        alert(`✅ Place "${result.place.name}" created successfully!`);
+      } else {
+        alert('❌ Could not create place automatically');
+      }
+    } catch (error) {
+      console.error('Auto-create failed:', error);
+      alert('❌ Failed to create place');
+    }
+  };
 
   const activeCat = CATEGORIES.find(c => c.value === category);
 
@@ -89,6 +137,72 @@ export default function Explore() {
             <X className="w-4 h-4" />
           </button>
         )}
+      </motion.div>
+
+      {/* FREE MAPS SEARCH FEATURE */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+        className="mb-5">
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
+            <MapPin className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
+            <input
+              value={mapsSearch}
+              onChange={e => setMapsSearch(e.target.value)}
+              onKeyPress={e => e.key === 'Enter' && searchMaps()}
+              placeholder="🔍 ابحث في خرائط العالم مجاناً..."
+              className="w-full bg-white/4 border border-white/8 rounded-2xl pr-11 pl-4 py-3 text-sm text-stone-200 placeholder-stone-600 outline-none focus:border-[#c9963a]/40 transition-all"
+            />
+          </div>
+          <button
+            onClick={searchMaps}
+            disabled={mapsLoading || !mapsSearch.trim()}
+            className="px-6 py-3 bg-[#c9963a] hover:bg-[#b8860b] disabled:bg-stone-600 text-white rounded-2xl font-medium transition-all flex items-center gap-2"
+          >
+            {mapsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            بحث
+          </button>
+        </div>
+
+        {/* Maps Search Results */}
+        <AnimatePresence>
+          {showMapsSearch && mapsResults.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-4 p-4 rounded-2xl bg-white/4 border border-white/8"
+            >
+              <h3 className="text-stone-200 font-semibold mb-3 flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                نتائج البحث في الخرائط ({mapsResults.length})
+              </h3>
+              <div className="space-y-2">
+                {mapsResults.map((place, index) => (
+                  <div key={place.id || index} className="flex items-center justify-between p-3 bg-white/4 rounded-xl">
+                    <div className="flex-1">
+                      <h4 className="text-stone-200 font-medium">{place.name}</h4>
+                      <p className="text-stone-500 text-sm">{place.full_name}</p>
+                      <p className="text-stone-400 text-xs">📍 {place.lat?.toFixed(4)}, {place.lon?.toFixed(4)}</p>
+                    </div>
+                    <button
+                      onClick={() => autoCreatePlace(place.name)}
+                      className="px-3 py-1 bg-[#c9963a] hover:bg-[#b8860b] text-white text-sm rounded-lg flex items-center gap-1 transition-all"
+                    >
+                      <Plus className="w-3 h-3" />
+                      أضف
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowMapsSearch(false)}
+                className="mt-3 text-stone-500 hover:text-stone-300 text-sm"
+              >
+                إخفاء النتائج
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {/* Filters */}

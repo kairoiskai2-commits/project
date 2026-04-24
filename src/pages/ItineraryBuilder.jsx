@@ -69,35 +69,91 @@ export default function ItineraryBuilder() {
     setLoading(true);
     setItinerary(null);
 
-    const prompt = `You are an expert Egypt travel planner. Create a detailed ${days}-day itinerary for: ${cities.join(', ')}.
-Budget type: ${budget}. Interests: ${interests.join(', ') || 'general sightseeing'}.
+    try {
+      // Use the new FREE AI Trip Planner API
+      const result = await db.integrations.External.aiTripPlanner('plan', {
+        destination: cities.length > 0 ? cities.join(', ') : 'Egypt',
+        duration: days,
+        budget: budget,
+        interests: interests,
+        travelers: 2
+      });
 
-Return a JSON with this EXACT structure:
-{
-  "title": "Trip title",
-  "summary": "2-sentence overview",
-  "highlights": ["highlight1", "highlight2", "highlight3"],
-  "days": [
-    {
-      "day": 1,
-      "theme": "Day theme",
-      "city": "City name",
-      "morning": { "activity": "Activity name", "place": "Place name", "duration": "X hours", "tip": "Quick tip" },
-      "afternoon": { "activity": "Activity name", "place": "Place name", "duration": "X hours", "tip": "Quick tip" },
-      "evening": { "activity": "Activity name", "place": "Place name", "duration": "X hours", "tip": "Quick tip" },
-      "transport": "How to get around",
-      "estimated_cost": "$XX–$XX"
+      if (result.success && result.trip_plan) {
+        // Convert AI trip plan to the expected format
+        const tripPlan = result.trip_plan;
+        const formattedItinerary = {
+          title: `${tripPlan.duration}-Day ${tripPlan.destination} Adventure`,
+          summary: `An AI-generated ${tripPlan.duration}-day itinerary for ${tripPlan.destination} focusing on ${tripPlan.interests?.join(', ') || 'general sightseeing'}.`,
+          highlights: tripPlan.days?.slice(0, 3).map(day => day.title) || [],
+          days: tripPlan.days?.map((day, index) => ({
+            day: day.day || (index + 1),
+            theme: day.title || `Day ${day.day || (index + 1)}`,
+            city: tripPlan.destination || 'Egypt',
+            morning: {
+              activity: day.activities?.[0] || 'Morning activity',
+              place: 'Local attraction',
+              duration: '3-4 hours',
+              tip: day.tips?.[0] || 'Enjoy the morning'
+            },
+            afternoon: {
+              activity: day.activities?.[1] || 'Afternoon activity',
+              place: 'Local attraction',
+              duration: '3-4 hours',
+              tip: day.tips?.[1] || 'Make the most of the afternoon'
+            },
+            evening: {
+              activity: day.activities?.[2] || 'Evening activity',
+              place: 'Local restaurant',
+              duration: '2-3 hours',
+              tip: day.tips?.[2] || 'Relax in the evening'
+            },
+            transport: day.transportation || 'Local transportation',
+            estimated_cost: '$50–$100'
+          })) || [],
+          practical_tips: tripPlan.days?.[0]?.tips || [
+            'Stay hydrated in the desert heat',
+            'Respect local customs and dress modestly',
+            'Try authentic Egyptian cuisine',
+            'Carry small cash for tips and small purchases'
+          ],
+          total_budget: '$500–$1500 total',
+          ai_generated: true,
+          source: 'Free AI Trip Planner'
+        };
+
+        setItinerary(formattedItinerary);
+      } else {
+        throw new Error('AI trip planning failed');
+      }
+    } catch (error) {
+      console.error('AI Trip Planner failed:', error);
+
+      // Fallback to basic template
+      const fallbackItinerary = {
+        title: `${days}-Day Egypt Explorer`,
+        summary: `A ${days}-day journey through Egypt's wonders.`,
+        highlights: ['Pyramids of Giza', 'Nile River', 'Ancient temples'],
+        days: Array.from({ length: days }, (_, i) => ({
+          day: i + 1,
+          theme: `Day ${i + 1} Discovery`,
+          city: cities[i % cities.length] || 'Cairo',
+          morning: { activity: 'Visit historical sites', place: 'Local attraction', duration: '3 hours', tip: 'Bring water' },
+          afternoon: { activity: 'Cultural experience', place: 'Museum/Market', duration: '3 hours', tip: 'Try local food' },
+          evening: { activity: 'Relax and dine', place: 'Restaurant', duration: '2 hours', tip: 'Enjoy the sunset' },
+          transport: 'Taxi/Uber',
+          estimated_cost: '$40–$80'
+        })),
+        practical_tips: ['Stay hydrated', 'Respect customs', 'Carry cash'],
+        total_budget: `$${days * 60}–$${days * 120} total`,
+        fallback: true
+      };
+
+      setItinerary(fallbackItinerary);
     }
-  ],
-  "practical_tips": ["tip1", "tip2", "tip3"],
-  "total_budget": "$XXX–$XXX total"
-}
 
-Generate exactly ${days} day objects. Make it realistic, specific to Egypt, and include iconic Egyptian places.`;
-
-    const result = await db.integrations.Core.InvokeLLM({
-      prompt,
-      response_json_schema: {
+    setLoading(false);
+  };
         type: 'object',
         properties: {
           title: { type: 'string' },
@@ -280,9 +336,9 @@ Generate exactly ${days} day objects. Make it realistic, specific to Egypt, and 
                 className="flex-1 py-6 font-bold rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white"
                 style={{ boxShadow: '0 0 30px rgba(201,150,58,0.3)' }}>
                 {loading ? (
-                  <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Generating with AI...</>
+                  <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Creating AI Trip Plan...</>
                 ) : (
-                  <><Zap className="w-5 h-5 mr-2" /> Generate My Itinerary</>
+                  <><Sparkles className="w-5 h-5 mr-2" /> Generate with Free AI ✨</>
                 )}
               </Button>
             </div>

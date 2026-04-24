@@ -311,7 +311,7 @@ export default function Header() {
           </div>
 
           {/* User / Login */}
-          {user ? (
+          {user && user.id && user.email ? (
             <div className="hidden sm:flex items-center gap-2">
               {user.role === 'admin' && (
                 <Link to={createPageUrl('Admin')}
@@ -324,9 +324,9 @@ export default function Header() {
                 className="flex items-center gap-1.5 px-2 py-1 rounded-xl hover:bg-[rgba(201,150,58,0.08)] transition-all">
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black"
                   style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 8px rgba(201,150,58,0.5)' }}>
-                  {user.full_name?.[0]?.toUpperCase() || '?'}
+                  {user.fullName?.[0]?.toUpperCase() || user.full_name?.[0]?.toUpperCase() || '?'}
                 </div>
-                <span className="text-xs font-bold text-stone-400 max-w-[60px] truncate">{user.full_name?.split(' ')[0] || 'Me'}</span>
+                <span className="text-xs font-bold text-stone-400 max-w-[60px] truncate">{user.fullName?.split(' ')[0] || user.full_name?.split(' ')[0] || 'Me'}</span>
               </Link>
             </div>
           ) : (
@@ -466,16 +466,16 @@ export default function Header() {
                   ))}
                 </div>
 
-                {user ? (
+                {user && user.id && user.email ? (
                   <>
                     <div className="flex items-center gap-3 px-3 py-3 rounded-xl"
                       style={{ background: 'rgba(201,150,58,0.08)', border: '1px solid rgba(201,150,58,0.2)' }}>
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-stone-900 font-black"
                         style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)' }}>
-                        {user.full_name?.[0]?.toUpperCase() || '?'}
+                        {user.fullName?.[0]?.toUpperCase() || user.full_name?.[0]?.toUpperCase() || '?'}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-stone-200 font-bold text-sm truncate">{user.full_name}</p>
+                        <p className="text-stone-200 font-bold text-sm truncate">{user.fullName || user.full_name}</p>
                         <p className="text-stone-500 text-xs font-mono truncate">{user.email}</p>
                       </div>
                     </div>
@@ -490,6 +490,15 @@ export default function Header() {
                       className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border text-red-400 text-sm font-bold active:scale-95"
                       style={{ borderColor: 'rgba(248,113,113,0.25)', background: 'rgba(248,113,113,0.06)' }}>
                       <LogOut className="w-4 h-4" /> {t('logout')}
+                    </button>
+                    <button onClick={async () => {
+                      // Reset all data
+                      await db.auth.reset();
+                      window.location.reload();
+                    }}
+                      className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border text-orange-400 text-xs font-bold active:scale-95"
+                      style={{ borderColor: 'rgba(251,146,60,0.25)', background: 'rgba(251,146,60,0.06)' }}>
+                      🔄 Reset Data
                     </button>
                   </>
                 ) : (
