@@ -1,0 +1,45 @@
+{
+  "name": "ChatMessage",
+  "type": "object",
+  "properties": {
+    "sender_email": {
+      "type": "string"
+    },
+    "sender_name": {
+      "type": "string"
+    },
+    "receiver_email": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false
+    },
+    "message_type": {
+      "type": "string",
+      "enum": [
+        "text",
+        "place",
+        "trip"
+      ],
+      "default": "text"
+    },
+    "place_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "sender_email",
+    "receiver_email",
+    "content"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {}
+  }
+}

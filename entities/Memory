@@ -1,0 +1,58 @@
+{
+  "name": "Memory",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "story": {
+      "type": "string"
+    },
+    "place_name": {
+      "type": "string"
+    },
+    "place_id": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "visit_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "mood": {
+      "type": "string",
+      "enum": [
+        "amazing",
+        "wonderful",
+        "good",
+        "mixed",
+        "disappointing"
+      ],
+      "default": "amazing"
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": true
+    },
+    "likes_count": {
+      "type": "number",
+      "default": 0
+    },
+    "ai_caption": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_email",
+    "title",
+    "story"
+  ]
+}

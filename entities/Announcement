@@ -1,0 +1,25 @@
+{
+  "name": "Announcement",
+  "type": "object",
+  "properties": {
+    "title_ar": {
+      "type": "string"
+    },
+    "title_en": {
+      "type": "string"
+    },
+    "title_fr": {
+      "type": "string"
+    },
+    "content_ar": {
+      "type": "string"
+    },
+    "content_en": {
+      "type": "string"
+    },
+    "content_fr": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true

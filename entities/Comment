@@ -1,0 +1,51 @@
+{
+  "name": "Comment",
+  "type": "object",
+  "properties": {
+    "place_id": {
+      "type": "string",
+      "description": "ID of the place being commented on"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user who commented"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Display name of the user"
+    },
+    "content": {
+      "type": "string",
+      "description": "Comment text"
+    },
+    "rating": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Star rating 1-5"
+    },
+    "is_approved": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether admin approved this comment"
+    }
+  },
+  "required": [
+    "place_id",
+    "content"
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

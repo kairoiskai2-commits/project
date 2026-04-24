@@ -1,0 +1,29 @@
+{
+  "name": "Favorite",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user"
+    },
+    "place_id": {
+      "type": "string",
+      "description": "ID of the favorited place"
+    },
+    "place_name": {
+      "type": "string",
+      "description": "Name of the place for display"
+    }
+  },
+  "required": [
+    "user_email",
+    "place_id"
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {},
+    "delete": {},
+    "write": {}
+  }
+}

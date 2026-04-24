@@ -1,0 +1,37 @@
+{
+  "name": "Friendship",
+  "type": "object",
+  "properties": {
+    "requester_email": {
+      "type": "string"
+    },
+    "receiver_email": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "requester_name": {
+      "type": "string"
+    },
+    "receiver_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "requester_email",
+    "receiver_email"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {}
+  }
+}

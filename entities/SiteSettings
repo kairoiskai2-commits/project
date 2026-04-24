@@ -1,0 +1,24 @@
+{
+  "name": "SiteSettings",
+  "type": "object",
+  "properties": {
+    "auto_fetch_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "fetch_interval_minutes": {
+      "type": "number",
+      "default": 1
+    },
+    "total_visits": {
+      "type": "number",
+      "default": 0
+    },
+    "last_wikipedia_fetch": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [],
+  "rls": {}
+}

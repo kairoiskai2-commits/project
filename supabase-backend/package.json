@@ -1,0 +1,23 @@
+{
+  "name": "travel-explorer-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Travel Explorer app using Supabase Edge Functions",
+  "scripts": {
+    "deploy": "supabase functions deploy",
+    "deploy:auth": "supabase functions deploy auth/login && supabase functions deploy auth/signup && supabase functions deploy auth/me",
+    "deploy:entities": "supabase functions deploy entities",
+    "deploy:integrations": "supabase functions deploy integrations",
+    "deploy:external": "supabase functions deploy external",
+    "deploy:all": "npm run deploy:auth && npm run deploy:entities && npm run deploy:integrations && npm run deploy:external",
+    "logs": "supabase functions logs",
+    "test": "npm run test:auth && npm run test:entities",
+    "test:auth": "curl -X POST http://localhost:54321/functions/v1/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"test@example.com\",\"password\":\"password\"}'",
+    "test:entities": "curl -X GET http://localhost:54321/functions/v1/entities/places -H 'Authorization: Bearer YOUR_TOKEN'"
+  },
+  "keywords": ["supabase", "edge-functions", "travel", "api"],
+  "author": "Travel Explorer Team",
+  "license": "MIT",
+  "devDependencies": {
+    "supabase": "^1.8.1"
+  }
+}

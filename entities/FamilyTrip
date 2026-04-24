@@ -1,0 +1,64 @@
+{
+  "name": "FamilyTrip",
+  "type": "object",
+  "properties": {
+    "creator_email": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "destination": {
+      "type": "string"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "members": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of member emails"
+    },
+    "description": {
+      "type": "string"
+    },
+    "budget": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planning",
+        "confirmed",
+        "ongoing",
+        "completed"
+      ],
+      "default": "planning"
+    },
+    "places": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of place IDs"
+    }
+  },
+  "required": [
+    "creator_email",
+    "name",
+    "destination"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {}
+  }
+}
