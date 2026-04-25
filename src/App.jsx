@@ -16,6 +16,8 @@ import AIStoryTeller from './pages/AIStoryTeller';
 import ArtificialGuide from './pages/ArtificialGuide';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import { db } from '@/api/apiClient';
+import { useEffect } from 'react';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -49,6 +51,116 @@ const ProtectedRoute = ({ children, isAuthenticated, isLoading }) => {
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isAuthenticated, authError } = useAuth();
 
+  // Auto-add Egyptian places from Wikipedia every minute
+  useEffect(() => {
+    const autoAddPlaces = async () => {
+      try {
+        // Get a random Egyptian place query
+        const egyptianPlaces = [
+  'Siwa Oasis','Dahab diving site','Saint Catherine Monastery',
+  'White Desert Farafra','Fayoum Oasis','Wadi El Rayan',
+  'Bahariya Oasis','Dakhla Oasis','Kharga Oasis',
+  'Ras Mohammed National Park','Colored Canyon','Abydos Temple',
+  'Dendera Temple','Edfu Temple','Kom Ombo Temple',
+  'Philae Temple','Abu Simbel','Nubian Museum',
+  'Egyptian Museum','Khan el-Khalili','Al-Azhar Mosque',
+  'Coptic Cairo','Bibliotheca Alexandrina','Qaitbay Citadel',
+  'Montaza Palace','El Alamein','Marsa Alam',
+  'Valley of the Kings','Karnak Temple','Hatshepsut Temple',
+  'Colossi of Memnon','Wadi Hitan','Lake Qarun',
+  'Black Desert','Crystal Mountain','Sannur Cave',
+  'Ras Abu Galum','Blue Hole Dahab','Nabq Bay',
+  'Tiran Island','Saint Anthony Monastery','Saint Paul Monastery',
+  'Wadi Degla','Petrified Forest','Temple of Luxor',
+  'Mosque of Muhammad Ali','Saladin Citadel','Giza Pyramids',
+  'Great Sphinx','Saqqara Step Pyramid','Memphis',
+  'Dahshur pyramids','Meidum Pyramid','Beni Hasan',
+  'Tell el-Amarna','Abusir pyramids',
+  'Hurghada Marina','Giftun Island','Mahmya Island','Sharm El Sheikh',
+  'Naama Bay','Shark Bay','SOHO Square Sharm','Ras Um Sid',
+  'Farsha Mountain Lounge','El Fanar Beach','Old Market Sharm',
+  'Taba Heights','Pharaohs Island','Castle Zaman Taba',
+  'Nuweiba Port','Coloured Canyon Nuweiba','Ain Khudra Oasis',
+  'Bir Sweir','Mount Sinai','Wadi Feiran',
+  'El Tor Sinai','Ras Sudr','Abu Zenima',
+  'Suez Canal','Ismailia Museum','Lake Timsah',
+  'Port Said Lighthouse','Port Fouad','Lake Manzala',
+  'Damietta Corniche','Ras El Bar','New Damietta',
+  'Mansoura University','Talkha Nile View','Tanta Mosque of Ahmad al-Badawi',
+  'Kafr El Sheikh Museum','Baltim Beach','Burullus Lake',
+  'Rosetta Rashid','Qaitbay Fort Rashid','Idku Lake',
+  'Stanley Bridge','Alexandria Corniche','Catacombs of Kom El Shoqafa',
+  'Pompey Pillar','Kom El Dikka','Royal Jewelry Museum',
+  'Graeco Roman Museum','Abu Mena','Borg El Arab',
+  'Wadi El Natrun','Deir Anba Bishoi','Deir El Baramus',
+  'Minya','Tuna El Gebel','Beni Hassan Tombs',
+  'Ashmunein','Mallawi Museum','Assiut Barrage',
+  'Sohag','Abydos','Red Monastery Sohag',
+  'Qena','Naqada','Esna Temple',
+  'Luxor Museum','Mummification Museum','Ramesseum',
+  'Medinet Habu','Deir el-Medina','Valley of the Queens',
+  'Aswan High Dam','Unfinished Obelisk','Elephantine Island',
+  'Kitchener Island','Aga Khan Mausoleum','Kalabsha Temple',
+  'Wadi Alaqi','Gebel Elba','Shalateen',
+  'Halayeb','Berenice Troglodytica','El Quseir',
+  'Wadi Hammamat','Mons Claudianus','Mons Porphyrites',
+  'Ain Sokhna','Galala Mountain','Zaafarana',
+  'New Administrative Capital','Al Masa Hotel NAC','Cathedral of the Nativity',
+  'Al Fattah Al Aleem Mosque','Al Azhar Park','Manial Palace',
+  'Abdeen Palace','Baron Empain Palace','Heliopolis Basilica',
+  'Ain Shams Obelisk','Nilometer Roda','Bab Zuweila',
+  'Bab al-Futuh','Bab al-Nasr','Al Muizz Street',
+  'Sultan Hassan Mosque','Al Rifai Mosque','Ibn Tulun Mosque',
+  'Gayer Anderson Museum','Manasterly Palace','Prince Mohamed Ali Palace'
+        ];
+
+        const randomQuery = egyptianPlaces[Math.floor(Math.random() * egyptianPlaces.length)];
+
+        // Search Wikipedia for the place
+        const searchResults = await db.integrations.External.wikipedia('search', { query: randomQuery });
+        if (!searchResults.success || !searchResults.results || searchResults.results.length === 0) return;
+
+        const firstResult = searchResults.results[0];
+        const placeName = firstResult.title;
+
+        // Check if place already exists (avoid duplicates)
+        const existingPlaces = await db.entities.Place.filter({ name_en: placeName });
+        if (existingPlaces.length > 0) return; // Already exists
+
+        // Get detailed info about the place
+        const details = await db.integrations.External.wikipedia('details', { query: placeName });
+        if (!details.success) return;
+
+        // Add the place to database
+        await db.entities.Place.create({
+          name_en: details.title,
+          name_ar: details.title, // Will be translated later if needed
+          description_en: details.extract?.substring(0, 1000) || '',
+          description_ar: '',
+          latitude: details.coordinates?.lat || null,
+          longitude: details.coordinates?.lon || null,
+          image_url: details.thumbnail || null,
+          category: 'historical',
+          wikipedia_url: details.url,
+          source: 'wikipedia-auto',
+          views_count: 0,
+          is_featured: false,
+          tags: ['wikipedia', 'auto-added']
+        });
+
+        console.log(`✓ Auto-added place: ${placeName}`);
+      } catch (error) {
+        console.error('Auto-add places error:', error);
+      }
+    };
+
+    // Run immediately, then every minute
+    autoAddPlaces();
+    const interval = setInterval(autoAddPlaces, 60000); // 1 minute
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Show loading spinner while checking auth
   if (isLoadingAuth) {
     return (
@@ -63,6 +175,8 @@ const AuthenticatedApp = () => {
     return <Navigate to="/login" replace />;
   }
 
+  const publicPages = new Set(['Home', 'Explore', 'Search', 'PlaceDetails', 'MapView', 'ContactDev', 'TravelPrices', 'WeatherGuide', 'AutoDiscover']);
+
   // Render the main app
   return (
     <Routes>
@@ -72,39 +186,37 @@ const AuthenticatedApp = () => {
 
       {/* Protected Routes */}
       <Route path="/" element={
-        <ProtectedRoute isAuthenticated={isAuthenticated} isLoading={isLoadingAuth}>
-          <LayoutWrapper currentPageName={mainPageKey}>
-            <MainPage />
-          </LayoutWrapper>
-        </ProtectedRoute>
+        publicPages.has(mainPageKey)
+          ? <LayoutWrapper currentPageName={mainPageKey}><MainPage /></LayoutWrapper>
+          : <ProtectedRoute isAuthenticated={isAuthenticated} isLoading={isLoadingAuth}>
+              <LayoutWrapper currentPageName={mainPageKey}>
+                <MainPage />
+              </LayoutWrapper>
+            </ProtectedRoute>
       } />
       {Object.entries(Pages).map(([path, Page]) => (
         <Route
           key={path}
           path={`/${path}`}
           element={
-            <ProtectedRoute isAuthenticated={isAuthenticated} isLoading={isLoadingAuth}>
-              <LayoutWrapper currentPageName={path}>
-                <Page />
-              </LayoutWrapper>
-            </ProtectedRoute>
+            publicPages.has(path)
+              ? <LayoutWrapper currentPageName={path}><Page /></LayoutWrapper>
+              : <ProtectedRoute isAuthenticated={isAuthenticated} isLoading={isLoadingAuth}>
+                  <LayoutWrapper currentPageName={path}>
+                    <Page />
+                  </LayoutWrapper>
+                </ProtectedRoute>
           }
         />
       ))}
       <Route path="/ContactDevelopers" element={
-        <ProtectedRoute isAuthenticated={isAuthenticated} isLoading={isLoadingAuth}>
-          <LayoutWrapper currentPageName="ContactDevelopers"><ContactDevelopers /></LayoutWrapper>
-        </ProtectedRoute>
+        <LayoutWrapper currentPageName="ContactDevelopers"><ContactDevelopers /></LayoutWrapper>
       } />
       <Route path="/EgyptPrices" element={
-        <ProtectedRoute isAuthenticated={isAuthenticated} isLoading={isLoadingAuth}>
-          <LayoutWrapper currentPageName="EgyptPrices"><EgyptPrices /></LayoutWrapper>
-        </ProtectedRoute>
+        <LayoutWrapper currentPageName="EgyptPrices"><EgyptPrices /></LayoutWrapper>
       } />
       <Route path="/AutoDiscover" element={
-        <ProtectedRoute isAuthenticated={isAuthenticated} isLoading={isLoadingAuth}>
-          <LayoutWrapper currentPageName="AutoDiscover"><AutoDiscover /></LayoutWrapper>
-        </ProtectedRoute>
+        <LayoutWrapper currentPageName="AutoDiscover"><AutoDiscover /></LayoutWrapper>
       } />
       <Route path="/Feed" element={
         <ProtectedRoute isAuthenticated={isAuthenticated} isLoading={isLoadingAuth}>

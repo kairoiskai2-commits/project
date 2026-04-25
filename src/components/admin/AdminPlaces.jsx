@@ -57,6 +57,8 @@ export default function AdminPlaces() {
   const [editingPlace, setEditingPlace] = useState(null);
   const [saving, setSaving] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [wikiSearchLoading, setWikiSearchLoading] = useState(false);
+  const [wikiSearchResults, setWikiSearchResults] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [formData, setFormData] = useState({
     name_ar: '',
@@ -116,6 +118,61 @@ export default function AdminPlaces() {
       });
     }
     setDialogOpen(true);
+  };
+
+  const handleFetchFromWikipedia = async (query) => {
+    if (!query.trim()) {
+      toast.error('Please enter a search query');
+      return;
+    }
+    setWikiSearchLoading(true);
+    try {
+      const result = await db.integrations.External.wikipedia('search', { query });
+      if (result.success && result.results && result.results.length > 0) {
+        setWikiSearchResults(result.results);
+        toast.success(`Found ${result.results.length} results`);
+      } else {
+        toast.error('No results found on Wikipedia');
+        setWikiSearchResults([]);
+      }
+    } catch (error) {
+      console.error('Wikipedia search error:', error);
+      toast.error('Failed to search Wikipedia');
+      setWikiSearchResults([]);
+    } finally {
+      setWikiSearchLoading(false);
+    }
+  };
+
+  const handleAddFromWikipedia = async (title) => {
+    try {
+      const details = await db.integrations.External.wikipedia('details', { query: title });
+      if (!details.success) {
+        toast.error('Failed to fetch place details');
+        return;
+      }
+
+      setFormData({
+        name_ar: details.title,
+        name_en: details.title,
+        name_fr: '',
+        description_ar: details.extract?.substring(0, 500) || '',
+        description_en: details.extract?.substring(0, 500) || '',
+        description_fr: '',
+        latitude: details.coordinates?.lat?.toString() || '',
+        longitude: details.coordinates?.lon?.toString() || '',
+        image_url: details.thumbnail || '',
+        category: 'historical',
+        is_featured: false,
+      });
+      setWikiSearchResults([]);
+      setEditingPlace(null);
+      setDialogOpen(true);
+      toast.success(`Loaded: ${title}`);
+    } catch (error) {
+      console.error('Error loading from Wikipedia:', error);
+      toast.error('Failed to load place details');
+    }
   };
 
   const handleSave = async () => {
@@ -241,19 +298,6 @@ export default function AdminPlaces() {
               <Download className="w-4 h-4" />
               CSV
             </Button>
-            <Button
-              variant="outline"
-              onClick={handleFetchFromWikipedia}
-              disabled={fetching}
-              className="border-amber-300"
-            >
-              {fetching ? (
-                <Loader2 className="w-4 h-4 animate-spin ml-2 rtl:mr-2 rtl:ml-0" />
-              ) : (
-                <Globe className="w-4 h-4 ml-2 rtl:mr-2 rtl:ml-0" />
-              )}
-              ويكيبيديا
-            </Button>
             <Button onClick={() => handleOpenDialog()} className="bg-amber-500 hover:bg-amber-600">
               <Plus className="w-4 h-4 ml-2 rtl:mr-2 rtl:ml-0" />
               {t('addPlace')}
@@ -261,6 +305,60 @@ export default function AdminPlaces() {
           </div>
         </div>
       </div>
+
+      {/* Wikipedia Search Section */}
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+        className="mb-6 p-4 rounded-xl border"
+        style={{ background: 'rgba(201,150,58,0.05)', borderColor: 'rgba(201,150,58,0.2)' }}>
+        <div className="flex gap-2 items-center">
+          <Input
+            placeholder="Search Wikipedia for Egyptian places..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleFetchFromWikipedia(searchQuery)}
+            className="flex-1"
+          />
+          <Button
+            onClick={() => handleFetchFromWikipedia(searchQuery)}
+            disabled={wikiSearchLoading}
+            className="bg-gradient-to-r from-[#c9963a] to-[#7a5c20]"
+          >
+            {wikiSearchLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                Searching...
+              </>
+            ) : (
+              <>
+                <Globe className="w-4 h-4 mr-2" />
+                Search Wikipedia
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Wikipedia Search Results */}
+        {wikiSearchResults.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+            className="mt-4 p-4 rounded-lg border-l-4"
+            style={{ background: 'rgba(34,211,238,0.05)', borderColor: 'rgba(34,211,238,0.4)' }}>
+            <p className="text-sm font-semibold text-stone-300 mb-3">Found {wikiSearchResults.length} results:</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+              {wikiSearchResults.map((result, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleAddFromWikipedia(result.title)}
+                  className="text-left p-3 rounded-lg border transition-all hover:border-[#67e8f9] hover:bg-[rgba(34,211,238,0.1)]"
+                  style={{ borderColor: 'rgba(34,211,238,0.3)' }}
+                >
+                  <p className="font-semibold text-stone-200 text-sm">{result.title}</p>
+                  <p className="text-xs text-stone-500 line-clamp-1">{result.snippet?.replace(/<[^>]*>/g, '') || ''}</p>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </motion.div>
 
       {/* Table */}
       {loading ? (

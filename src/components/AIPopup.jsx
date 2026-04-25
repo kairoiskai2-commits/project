@@ -109,33 +109,36 @@ export default function AIPopup() {
       `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`
     ).join('\n');
 
-    const response = await db.integrations.Core.InvokeLLM({
-      prompt: `You are an expert Egypt travel AI guide named "مرشد مصر" (Egypt Guide).
+    // Use Wikipedia-based AI response
+    const wikiSearch = await db.integrations.External.wikipedia('search', { query: msg });
+    let response = '';
 
-CRITICAL LANGUAGE RULE: Detect the language of the user's message and ALWAYS respond in that EXACT same language. 
-- If user writes in Arabic → respond in Arabic
-- If user writes in English → respond in English  
-- If user writes in French → respond in French
-- If user writes in any other language → respond in that language
-- Never switch languages unless the user switches first
+    if (wikiSearch.success && wikiSearch.extract) {
+      // Generate response based on Wikipedia content
+      response = `بناءً على معلومات ويكيبيديا: ${wikiSearch.extract.substring(0, 300)}...
 
-Be concise (2-3 paragraphs max), engaging, and informative. Focus on Egyptian places, history, culture, travel tips.
+**${wikiSearch.title}**
+${wikiSearch.extract.substring(300, 600) || 'لمزيد من التفاصيل، يرجى زيارة: ' + wikiSearch.url}
 
-Previous conversation:
-${conversationHistory}
+هل تريد معرفة المزيد عن هذا المكان أو أماكن أخرى في مصر؟`;
+    } else {
+      // Fallback response
+      response = `أنا مرشد مصر الذكي! أسأل عن أي مكان أو معلم في مصر وسأخبرك عنه. 
 
-Current user message: ${msg}
+مثال: "ما هي أهرامات الجيزة؟" أو "أخبرني عن الأقصر"
 
-Wrap specific Egyptian place names in [brackets] so they can be added to the app.
-Respond in the same language as the user's message above.`,
-    });
+ما الذي تريد معرفته عن مصر اليوم؟`;
+    }
 
-    const placeMatches = response.match(/\[([^\]]+)\]/g);
-    const places = placeMatches ? placeMatches.map(m => m.slice(1, -1)) : [];
+    // Extract place names from the response and wrap them in brackets for auto-add
+    const placeNames = response.match(/\b(أهرامات|معبد|هرم|واحة|شاطئ|جبل|وادي|قلعة|متحف|مسجد|كنيسة|دير|بحيرة|نهر|صحراء|مدينة|قرية|منطقة|محافظة)\s+[الأ\s]*[^\s.!?،؛]+/g) || [];
+    const formattedResponse = response.replace(/\b(أهرامات|معبد|هرم|واحة|شاطئ|جبل|وادي|قلعة|متحف|مسجد|كنيسة|دير|بحيرة|نهر|صحراء|مدينة|قرية|منطقة|محافظة)\s+[الأ\s]*[^\s.!?،؛]+/g, (match) => `[${match}]`);
+
+    const places = placeNames.map(name => name.trim());
 
     setMessages(prev => [...prev, {
       role: 'assistant',
-      content: response.replace(/\[([^\]]+)\]/g, '**$1**'),
+      content: formattedResponse.replace(/\[([^\]]+)\]/g, '**$1**'),
       places,
     }]);
     setLoading(false);

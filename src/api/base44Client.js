@@ -313,6 +313,21 @@ const auth = {
     try {
       const user = getSessionUser()
       if (user && user.id && user.email) {
+        // Get full user record from database for role
+        const db = await loadDatabase()
+        if (db && db.users) {
+          const fullUser = db.users.find(u => u.email.toLowerCase() === user.email.toLowerCase())
+          if (fullUser) {
+            return {
+              id: user.id || fullUser.id,
+              email: user.email || fullUser.email,
+              fullName: user.fullName || fullUser.fullName,
+              full_name: user.fullName || fullUser.fullName,
+              role: fullUser.role || 'user',
+              createdAt: user.createdAt || fullUser.createdAt,
+            }
+          }
+        }
         return user
       }
       clearSession()
@@ -558,13 +573,27 @@ const integrations = {
     },
     InvokeLLM: async (params) => {
       try {
-        // Use the AI chat function for LLM invocations
-        const messages = [{ content: params.prompt }];
-        const response = await integrations.AI.chat(messages, {
-          max_length: params.max_tokens || 500,
-          temperature: params.temperature || 0.7,
+        const apiKey = 'sk-efgh5678efgh5678efgh5678efgh5678efgh5678';
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-3.5-turbo',
+            messages: [{ role: 'user', content: params.prompt }],
+            max_tokens: params.max_tokens || 500,
+            temperature: params.temperature || 0.7
+          })
         });
-        return response.response || response;
+        
+        if (!response.ok) {
+          throw new Error(`OpenAI API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        return data.choices?.[0]?.message?.content || 'Unable to generate response';
       } catch (error) {
         console.error('InvokeLLM failed:', error);
         return 'Sorry, I am unable to respond right now. Please try again later.';
@@ -574,84 +603,151 @@ const integrations = {
   AI: {
     chat: async (messages, options = {}) => {
       try {
-        // Try Hugging Face free inference API (no API key required)
-        const response = await fetch('https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium', {
+        const apiKey = 'sk-efgh5678efgh5678efgh5678efgh5678efgh5678';
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
           },
           body: JSON.stringify({
-            inputs: {
-              past_user_inputs: messages.slice(0, -1).map(m => m.content || m.text || m),
-              generated_responses: [],
-              text: messages[messages.length - 1]?.content || messages[messages.length - 1]?.text || messages[messages.length - 1] || "Hello"
-            },
-            parameters: {
-              max_length: 100,
-              temperature: 0.7,
-              ...options
-            }
+            model: 'gpt-3.5-turbo',
+            messages: messages.map(m => ({
+              role: typeof m === 'string' ? 'user' : (m.role || 'user'),
+              content: typeof m === 'string' ? m : (m.content || m.text || '')
+            })),
+            max_tokens: options.max_length || 200,
+            temperature: options.temperature || 0.7
           })
         });
 
         if (!response.ok) {
-          throw new Error(`Hugging Face API error: ${response.status}`);
+          throw new Error(`OpenAI API error: ${response.status}`);
         }
 
         const data = await response.json();
-
         return {
-          response: data.generated_text || data[0]?.generated_text || "I'm a free AI assistant! How can I help you with your Egypt travel plans?",
+          response: data.choices?.[0]?.message?.content || 'Unable to generate response',
           success: true,
-          source: 'Hugging Face (Free)'
+          source: 'OpenAI'
         };
       } catch (error) {
-        console.error('Free AI chat failed:', error);
-        // Fallback response
+        console.error('AI chat failed:', error);
         return {
-          response: "Hello! I'm a free AI assistant powered by Hugging Face. I can help you with general questions about Egypt travel, but I'm limited compared to paid AI services. What would you like to know?",
-          success: true,
-          source: 'Fallback (Free)',
-          note: 'Using free AI service - responses may be limited'
+          response: 'Sorry, I am unable to respond right now. Please try again later.',
+          success: false,
+          source: 'Error',
+          error: error.message
         };
       }
     },
     generateImage: async (prompt, options = {}) => {
-      // Free alternative: Use a placeholder service or free tier
-      console.warn('Image generation using free placeholder service');
-      return {
-        image_url: `https://via.placeholder.com/512x512/DEB887/8B4513?text=${encodeURIComponent(prompt.substring(0, 50))}`,
-        success: true,
-        note: 'Using free placeholder - implement real image generation for production'
-      };
+      try {
+        const apiKey = 'sk-efgh5678efgh5678efgh5678efgh5678efgh5678';
+        const response = await fetch('https://api.openai.com/v1/images/generations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'dall-e-3',
+            prompt: prompt,
+            n: 1,
+            size: '1024x1024',
+            quality: 'standard'
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`OpenAI Image API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return {
+          image_url: data.data?.[0]?.url || null,
+          success: !!data.data?.[0]?.url,
+          source: 'OpenAI DALL-E'
+        };
+      } catch (error) {
+        console.error('Image generation failed:', error);
+        // Fallback to placeholder
+        return {
+          image_url: `https://via.placeholder.com/512x512/DEB887/8B4513?text=${encodeURIComponent(prompt.substring(0, 50))}`,
+          success: false,
+          source: 'Placeholder Fallback',
+          error: error.message
+        };
+      }
     },
   },
   External: {
     wikipedia: async (action, params) => {
       try {
-        const query = params.query || params.title || params.search || 'Egypt';
-        const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
+        // Handle search action - returns search results
+        if (action === 'search') {
+          const query = params.query || params.search || 'Egypt';
+          const url = new URL('https://en.wikipedia.org/w/api.php');
+          url.searchParams.set('action', 'query');
+          url.searchParams.set('list', 'search');
+          url.searchParams.set('srsearch', query);
+          url.searchParams.set('format', 'json');
+          url.searchParams.set('origin', '*');
+          url.searchParams.set('srlimit', '5');
+          url.searchParams.set('srprop', 'snippet|titlesnippet|wordcount|timestamp');
 
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`Wikipedia API error: ${response.status}`);
+          const response = await fetch(url.toString());
+          if (!response.ok) throw new Error(`Wikipedia search failed: ${response.status}`);
+          
+          const data = await response.json();
+          const results = data.query?.search || [];
+          
+          return {
+            results: results.map(r => ({ title: r.title, snippet: r.snippet })),
+            count: results.length,
+            success: results.length > 0,
+            source: 'Wikipedia Search (MediaWiki API)'
+          };
         }
 
-        const data = await response.json();
+        // Default action - get page details by title
+        const query = params.query || params.title || params.search || 'Egypt';
+        const url = new URL('https://en.wikipedia.org/w/api.php');
+        url.searchParams.set('action', 'query');
+        url.searchParams.set('titles', query);
+        url.searchParams.set('prop', 'extracts|coordinates|pageimages');
+        url.searchParams.set('exintro', 'true');
+        url.searchParams.set('explaintext', 'true');
+        url.searchParams.set('pithumbsize', '800');
+        url.searchParams.set('format', 'json');
+        url.searchParams.set('origin', '*');
 
+        const response = await fetch(url.toString());
+        if (!response.ok) throw new Error(`Wikipedia API error: ${response.status}`);
+
+        const data = await response.json();
+        const pages = data.query?.pages || {};
+        const pageId = Object.keys(pages)[0];
+        
+        if (pageId === '-1') {
+          throw new Error('Page not found');
+        }
+
+        const page = pages[pageId];
         return {
-          title: data.title,
-          extract: data.extract,
-          thumbnail: data.thumbnail?.source,
-          url: data.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(query)}`,
+          title: page.title,
+          extract: page.extract,
+          thumbnail: page.thumbnail?.source,
+          coordinates: page.coordinates?.[0] || null,
+          url: `https://en.wikipedia.org/wiki/${encodeURIComponent(page.title)}`,
           success: true,
-          source: 'Wikipedia (Free API)'
+          source: 'Wikipedia (MediaWiki API)'
         };
       } catch (error) {
         console.error('Wikipedia API failed:', error);
         return {
           title: params.query || 'Egypt',
-          extract: 'Information not available. Wikipedia API is free and should work, but there might be a temporary issue.',
+          extract: 'Information not available.',
           success: false,
           error: error.message
         };

@@ -63,18 +63,34 @@ export default function Social() {
         const me = await db.auth.me();
         setUser(me);
 
-        const [allProfiles, sentF, receivedF] = await Promise.all([
-          db.entities.UserProfile.list('-created_date', 100),
+        const [allUsers, allProfiles, sentF, receivedF] = await Promise.all([
+          db.entities.User.list('-createdAt', 100),
+          db.entities.UserProfile.list('-createdAt', 100),
           db.entities.Friendship.filter({ requester_email: me.email }),
           db.entities.Friendship.filter({ receiver_email: me.email }),
         ]);
 
-        // Find my own profile
-        const mine = allProfiles.find(p => p.user_email === me.email);
+        const profileByEmail = new Map(allProfiles.map(p => [p.user_email, p]));
+        const mine = profileByEmail.get(me.email);
         setMyProfile(mine || null);
 
-        // Other users' profiles (everyone else)
-        setProfiles(allProfiles.filter(p => p.user_email !== me.email));
+        const otherProfiles = allUsers
+          .filter(userItem => userItem.email !== me.email)
+          .map(userItem => {
+            const profile = profileByEmail.get(userItem.email);
+            return profile || {
+              id: `profile-${userItem.id}`,
+              user_email: userItem.email,
+              display_name: userItem.fullName || userItem.email,
+              bio: '',
+              location: '',
+              avatar_url: '',
+              cover_url: '',
+              createdAt: userItem.createdAt,
+            };
+          });
+
+        setProfiles(otherProfiles);
 
         const accepted = [...sentF, ...receivedF].filter(f => f.status === 'accepted');
         setFriends(accepted);
