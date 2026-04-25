@@ -239,7 +239,7 @@ export default function AdminPlaces() {
     loadPlaces();
   };
 
-  const handleFetchFromWikipedia = async () => {
+  const handleFetchRandomPlace = async () => {
     setFetching(true);
     const result = await fetchRandomEgyptianPlace();
     if (result) {
