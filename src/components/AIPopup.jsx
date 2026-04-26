@@ -104,25 +104,19 @@ export default function AIPopup() {
     setMessages(prev => [...prev, { role: 'user', content: msg }]);
     setLoading(true);
 
-    // Use Wikipedia-based response like place descriptions
+    // Always use Wikipedia search - no intro messages
     const wikiSearch = await db.integrations.External.wikipedia('search', { query: msg });
     let response = '';
 
     if (wikiSearch.success && wikiSearch.extract) {
-      // Generate response based on Wikipedia content
-      response = `بناءً على معلومات ويكيبيديا: ${wikiSearch.extract.substring(0, 300)}...
+      // Return Wikipedia content directly
+      response = `${wikiSearch.extract}
 
 **${wikiSearch.title}**
-${wikiSearch.extract.substring(300, 600) || 'لمزيد من التفاصيل، يرجى زيارة: ' + wikiSearch.url}
-
-هل تريد معرفة المزيد عن هذا المكان أو أماكن أخرى في مصر؟`;
+${wikiSearch.url ? `Source: ${wikiSearch.url}` : ''}`;
     } else {
-      // Fallback response
-      response = `أنا مرشد مصر الذكي! أسأل عن أي مكان أو معلم في مصر وسأخبرك عنه.
-
-مثال: "ما هي أهرامات الجيزة؟" أو "أخبرني عن الأقصر"
-
-ما الذي تريد معرفته عن مصر اليوم؟`;
+      // Simple fallback if no Wikipedia results
+      response = `No information found for "${msg}". Try searching for specific Egyptian places like "Pyramids of Giza" or "Luxor Temple".`;
     }
 
     // Extract place names from the response and wrap them in brackets for auto-add
