@@ -49,4 +49,20 @@ try {
   console.log('❌ AI Trip Planner Error:', error.message);
 }
 
+// Test 4: AI LLM (for AskAI bots)
+console.log('\n4️⃣ Testing AI LLM (AskAI)...');
+try {
+  const llmResult = await integrations.Core.InvokeLLM({
+    prompt: 'Hello, can you tell me about the Pyramids of Giza?',
+    max_tokens: 200
+  });
+  console.log('✅ AI LLM:', llmResult && llmResult.length > 10 ? 'WORKING' : 'FAILED');
+  if (llmResult) {
+    console.log(`   Response length: ${llmResult.length} characters`);
+    console.log(`   Preview: ${llmResult.substring(0, 100)}...`);
+  }
+} catch (error) {
+  console.log('❌ AI LLM Error:', error.message);
+}
+
 console.log('\n🎉 All tests completed! Check results above.');

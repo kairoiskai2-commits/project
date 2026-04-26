@@ -67,8 +67,20 @@ function TypingDots() {
   return (
     <div className="flex items-center gap-1.5 py-1 px-1">
       {[0, 1, 2].map(i => (
-        <div key={i} className="typing-dot w-2 h-2 rounded-full bg-[#c9963a]"
-          style={{ animationDelay: `${i * 0.15}s` }} />
+        <motion.div
+          key={i}
+          className="w-2 h-2 rounded-full bg-[#c9963a]"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.4, 1, 0.4]
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            delay: i * 0.15,
+            ease: "easeInOut"
+          }}
+        />
       ))}
     </div>
   );
@@ -105,11 +117,29 @@ export default function AIPopup() {
     setLoading(true);
 
     // Detect query language and search the proper Wikipedia domain
+    // Detect query language and search the proper Wikipedia domain
     const detectWikiLang = (text) => {
-      if (/[\u0600-\u06FF]/.test(text)) return 'ar';
-      if (/[\u4E00-\u9FFF]/.test(text)) return 'zh';
-      if (/[\u3040-\u30FF]/.test(text)) return 'ja';
-      return 'en';
+      if (/[\u0600-\u06FF]/.test(text)) return 'ar'; // Arabic
+      if (/[\u4E00-\u9FFF]/.test(text)) return 'zh'; // Chinese
+      if (/[\u3040-\u30FF]/.test(text)) return 'ja'; // Japanese
+      if (/[\uAC00-\uD7AF]/.test(text)) return 'ko'; // Korean
+      if (/[\u0400-\u04FF]/.test(text)) return 'ru'; // Russian
+      if (/[\u0370-\u03FF]/.test(text)) return 'el'; // Greek
+      if (/[\u0900-\u097F]/.test(text)) return 'hi'; // Hindi
+      if (/[\u0980-\u09FF]/.test(text)) return 'bn'; // Bengali
+      if (/[\u0E00-\u0E7F]/.test(text)) return 'th'; // Thai
+      if (/[\u0B80-\u0BFF]/.test(text)) return 'ta'; // Tamil
+      if (/[\u0C00-\u0C7F]/.test(text)) return 'te'; // Telugu
+      if (/[\u0D00-\u0D7F]/.test(text)) return 'ml'; // Malayalam
+      if (/[\u0A80-\u0AFF]/.test(text)) return 'gu'; // Gujarati
+      if (/[\u0B00-\u0B7F]/.test(text)) return 'or'; // Odia
+      if (/[\u0C80-\u0CFF]/.test(text)) return 'kn'; // Kannada
+      if (/[\u0D80-\u0DFF]/.test(text)) return 'si'; // Sinhala
+      if (/[\u0F00-\u0FFF]/.test(text)) return 'bo'; // Tibetan
+      if (/[\u0E80-\u0EFF]/.test(text)) return 'lo'; // Lao
+      if (/[\u1000-\u109F]/.test(text)) return 'my'; // Myanmar
+      if (/[\u1200-\u137F]/.test(text)) return 'am'; // Amharic
+      return 'en'; // Default to English
     };
 
     const wikiLang = detectWikiLang(msg);
@@ -233,18 +263,45 @@ ${wikiDetails.url ? `Source: ${wikiDetails.url}` : ''}`;
                     ) : (
                       <>
                         {messages.map((msg, i) => (
-                          <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                            <div className={`flex-shrink-0 w-7 h-7 rounded-xl flex items-center justify-center text-xs ${
+                          <motion.div
+                            key={i}
+                            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+                          >
+                            <div className={`flex-shrink-0 w-7 h-7 rounded-xl flex items-center justify-center text-xs shadow-lg ${
                               msg.role === 'user' ? 'bg-stone-800 border border-stone-700' : ''
                             }`}
-                              style={msg.role === 'assistant' ? { background: 'linear-gradient(135deg,#c9963a,#7a5c20)' } : {}}>
+                              style={msg.role === 'assistant' ? {
+                                background: 'linear-gradient(135deg,#c9963a,#7a5c20)',
+                                boxShadow: '0 0 12px rgba(201,150,58,0.3)'
+                              } : {}}>
                               {msg.role === 'user' ? <User className="w-3.5 h-3.5 text-stone-400" /> : '𓂀'}
                             </div>
                             <div className={`max-w-[82%] flex flex-col gap-1.5 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                              <div className={`rounded-2xl px-3 py-2.5 text-sm leading-relaxed ${
-                                msg.role === 'user' ? 'msg-user text-stone-200' : 'msg-ai text-stone-200'
-                              }`}>
-                                {msg.role === 'user' ? <p>{msg.content}</p> : (
+                              <div className={`relative rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-lg ${
+                                msg.role === 'user'
+                                  ? 'bg-gradient-to-br from-stone-700 to-stone-800 text-stone-100 border border-stone-600'
+                                  : 'bg-gradient-to-br from-amber-50 to-yellow-100 text-stone-800 border border-amber-200'
+                              }`}
+                                style={msg.role === 'assistant' ? {
+                                  background: 'linear-gradient(135deg, rgba(201,150,58,0.1), rgba(122,92,32,0.05))',
+                                  border: '1px solid rgba(201,150,58,0.2)',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1), 0 0 8px rgba(201,150,58,0.1)'
+                                } : {}}>
+                                {/* Chat bubble tail */}
+                                <div className={`absolute top-3 w-3 h-3 transform rotate-45 ${
+                                  msg.role === 'user' ? '-right-1.5 bg-stone-700 border-r border-t border-stone-600' : '-left-1.5 bg-amber-50 border-l border-t border-amber-200'
+                                }`}
+                                  style={msg.role === 'assistant' ? {
+                                    background: 'linear-gradient(135deg, rgba(201,150,58,0.1), rgba(122,92,32,0.05))',
+                                    border: '1px solid rgba(201,150,58,0.2)'
+                                  } : {}} />
+
+                                {msg.role === 'user' ? (
+                                  <p className="text-stone-100">{msg.content}</p>
+                                ) : (
                                   <div className="prose prose-xs prose-invert max-w-none prose-p:my-0.5">
                                     <ReactMarkdown>{msg.content}</ReactMarkdown>
                                   </div>
@@ -254,8 +311,13 @@ ${wikiDetails.url ? `Source: ${wikiDetails.url}` : ''}`;
                                 <div className="flex flex-wrap gap-1">
                                   {msg.places.map((place, pi) => (
                                     <button key={pi} onClick={() => handleAddPlace(place)} disabled={addingPlace === place}
-                                      className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full transition-all hover:scale-105"
-                                      style={{ background: 'rgba(201,150,58,0.12)', border: '1px solid rgba(201,150,58,0.3)', color: '#c9963a' }}>
+                                      className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full transition-all hover:scale-105 shadow-sm"
+                                      style={{
+                                        background: 'rgba(201,150,58,0.12)',
+                                        border: '1px solid rgba(201,150,58,0.3)',
+                                        color: '#c9963a',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                      }}>
                                       {addingPlace === place ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Plus className="w-2.5 h-2.5" />}
                                       {place}
                                     </button>
@@ -263,14 +325,35 @@ ${wikiDetails.url ? `Source: ${wikiDetails.url}` : ''}`;
                                 </div>
                               )}
                             </div>
-                          </div>
+                          </motion.div>
                         ))}
                         {loading && (
-                          <div className="flex gap-2">
-                            <div className="w-7 h-7 rounded-xl text-xs flex items-center justify-center"
-                              style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)' }}>𓂀</div>
-                            <div className="msg-ai rounded-2xl px-3 py-2.5"><TypingDots /></div>
-                          </div>
+                          <motion.div
+                            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="flex gap-2"
+                          >
+                            <div className="w-7 h-7 rounded-xl text-xs flex items-center justify-center shadow-lg"
+                              style={{
+                                background: 'linear-gradient(135deg,#c9963a,#7a5c20)',
+                                boxShadow: '0 0 12px rgba(201,150,58,0.3)'
+                              }}>𓂀</div>
+                            <div className="relative rounded-2xl px-3 py-2.5 shadow-lg"
+                              style={{
+                                background: 'linear-gradient(135deg, rgba(201,150,58,0.1), rgba(122,92,32,0.05))',
+                                border: '1px solid rgba(201,150,58,0.2)',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1), 0 0 8px rgba(201,150,58,0.1)'
+                              }}>
+                              {/* Chat bubble tail */}
+                              <div className="absolute top-3 -left-1.5 w-3 h-3 transform rotate-45"
+                                style={{
+                                  background: 'linear-gradient(135deg, rgba(201,150,58,0.1), rgba(122,92,32,0.05))',
+                                  border: '1px solid rgba(201,150,58,0.2)'
+                                }} />
+                              <TypingDots />
+                            </div>
+                          </motion.div>
                         )}
                       </>
                     )}

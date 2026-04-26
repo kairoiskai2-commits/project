@@ -64,8 +64,21 @@ function TypingDots() {
   return (
     <div className="flex items-center gap-1.5 py-1">
       {[0,1,2].map(i => (
-        <div key={i} className={`typing-dot w-2 h-2 rounded-full`}
-          style={{ background: '#c9963a', animationDelay: `${i*0.15}s` }} />
+        <motion.div
+          key={i}
+          className="w-2 h-2 rounded-full"
+          style={{ background: '#c9963a' }}
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.4, 1, 0.4]
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            delay: i * 0.15,
+            ease: "easeInOut"
+          }}
+        />
       ))}
     </div>
   );
@@ -104,12 +117,13 @@ export default function AskAI() {
     }));
     setLoading(true);
 
-    const history = chatsByBot[activeBot].slice(-6).map(m =>
-      `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`
-    ).join('\n');
+    try {
+      const history = chatsByBot[activeBot].slice(-6).map(m =>
+        `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`
+      ).join('\n');
 
-    const response = await db.integrations.Core.InvokeLLM({
-      prompt: `${bot.system}
+      const response = await db.integrations.Core.InvokeLLM({
+        prompt: `${bot.system}
 
 Conversation history:
 ${history}
@@ -117,22 +131,36 @@ ${history}
 User: ${msg}
 
 Respond in ${langName}. Be helpful, detailed, and engaging. ${activeBot === 'guide' ? 'When mentioning specific Egyptian places, wrap their English names in [brackets] like [Valley of the Kings].' : ''}`,
-      add_context_from_internet: activeBot === 'planner',
-    });
+        add_context_from_internet: activeBot === 'planner',
+        max_tokens: 800,
+        temperature: 0.7
+      });
 
-    const placeMatches = response.match(/\[([^\]]+)\]/g);
-    const places = placeMatches ? placeMatches.map(m => m.slice(1, -1)) : [];
+      const placeMatches = response.match(/\[([^\]]+)\]/g);
+      const places = placeMatches ? placeMatches.map(m => m.slice(1, -1)) : [];
 
-    setChatsByBot(prev => ({
-      ...prev,
-      [activeBot]: [...prev[activeBot], {
-        role: 'assistant',
-        content: response.replace(/\[([^\]]+)\]/g, '**$1**'),
-        places
-      }]
-    }));
-    setLoading(false);
-    inputRef.current?.focus();
+      setChatsByBot(prev => ({
+        ...prev,
+        [activeBot]: [...prev[activeBot], {
+          role: 'assistant',
+          content: response.replace(/\[([^\]]+)\]/g, '**$1**'),
+          places
+        }]
+      }));
+    } catch (error) {
+      console.error('AI response error:', error);
+      setChatsByBot(prev => ({
+        ...prev,
+        [activeBot]: [...prev[activeBot], {
+          role: 'assistant',
+          content: 'Sorry, I encountered an error while processing your request. Please try again or check your internet connection.',
+          places: []
+        }]
+      }));
+    } finally {
+      setLoading(false);
+      inputRef.current?.focus();
+    }
   };
 
   const handleAddPlace = async (placeName) => {
@@ -240,19 +268,38 @@ Respond in ${langName}. Be helpful, detailed, and engaging. ${activeBot === 'gui
                 {messages.map((msg, i) => (
                   <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                     className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                    <div className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-sm ${
+                    <div className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-sm shadow-lg ${
                       msg.role === 'user'
                         ? 'bg-stone-800 border border-stone-700'
                         : `bg-gradient-to-br ${bot.gradient}`
-                    }`}>
+                    }`}
+                      style={msg.role === 'assistant' ? { boxShadow: `0 0 12px ${bot.glow}` } : {}}>
                       {msg.role === 'user' ? <User className="w-4 h-4 text-stone-400" /> : bot.icon}
                     </div>
                     <div className={`flex-1 max-w-[82%] ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-col gap-2`}>
-                      <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                        msg.role === 'user' ? 'msg-user text-stone-200' : 'msg-ai text-stone-200'
-                      }`}>
+                      <div className={`relative rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-lg ${
+                        msg.role === 'user'
+                          ? 'bg-gradient-to-br from-stone-700 to-stone-800 text-stone-100 border border-stone-600'
+                          : 'bg-gradient-to-br from-amber-50 to-yellow-100 text-stone-800 border border-amber-200'
+                      }`}
+                        style={msg.role === 'assistant' ? {
+                          background: `linear-gradient(135deg, ${bot.color}15, ${bot.color}05)`,
+                          border: `1px solid ${bot.color}30`,
+                          boxShadow: `0 4px 12px rgba(0,0,0,0.1), 0 0 8px ${bot.glow}`
+                        } : {}}>
+                        {/* Chat bubble tail */}
+                        <div className={`absolute top-3 w-3 h-3 transform rotate-45 ${
+                          msg.role === 'user'
+                            ? '-right-1.5 bg-stone-700 border-r border-t border-stone-600'
+                            : `-left-1.5 border-l border-t`
+                        }`}
+                          style={msg.role === 'assistant' ? {
+                            background: `linear-gradient(135deg, ${bot.color}15, ${bot.color}05)`,
+                            border: `1px solid ${bot.color}30`
+                          } : {}} />
+
                         {msg.role === 'user' ? (
-                          <p>{msg.content}</p>
+                          <p className="text-stone-100">{msg.content}</p>
                         ) : (
                           <div className="prose prose-sm prose-invert max-w-none prose-p:my-1 prose-headings:text-stone-200">
                             <ReactMarkdown>{msg.content}</ReactMarkdown>
@@ -264,8 +311,13 @@ Respond in ${langName}. Be helpful, detailed, and engaging. ${activeBot === 'gui
                           {msg.places.map((place, j) => (
                             <button key={j} disabled={addingPlace === place}
                               onClick={() => handleAddPlace(place)}
-                              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all hover:scale-105"
-                              style={{ background: 'rgba(201,150,58,0.12)', border: '1px solid rgba(201,150,58,0.3)', color: '#c9963a' }}>
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all hover:scale-105 shadow-sm"
+                              style={{
+                                background: 'rgba(201,150,58,0.12)',
+                                border: '1px solid rgba(201,150,58,0.3)',
+                                color: '#c9963a',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                              }}>
                               {addingPlace === place ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
                               {place}
                             </button>
@@ -277,10 +329,22 @@ Respond in ${langName}. Be helpful, detailed, and engaging. ${activeBot === 'gui
                 ))}
                 {loading && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3">
-                    <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${bot.gradient} flex items-center justify-center text-sm`}>
+                    <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${bot.gradient} flex items-center justify-center text-sm shadow-lg`}
+                      style={{ boxShadow: `0 0 12px ${bot.glow}` }}>
                       {bot.icon}
                     </div>
-                    <div className="msg-ai rounded-2xl px-4 py-3">
+                    <div className="relative rounded-2xl px-4 py-3 shadow-lg"
+                      style={{
+                        background: `linear-gradient(135deg, ${bot.color}15, ${bot.color}05)`,
+                        border: `1px solid ${bot.color}30`,
+                        boxShadow: `0 4px 12px rgba(0,0,0,0.1), 0 0 8px ${bot.glow}`
+                      }}>
+                      {/* Chat bubble tail */}
+                      <div className="absolute top-3 -left-1.5 w-3 h-3 transform rotate-45"
+                        style={{
+                          background: `linear-gradient(135deg, ${bot.color}15, ${bot.color}05)`,
+                          border: `1px solid ${bot.color}30`
+                        }} />
                       <TypingDots />
                     </div>
                   </motion.div>

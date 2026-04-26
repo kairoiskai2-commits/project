@@ -27,10 +27,27 @@ npm install
 cp .env.example .env.local
 ```
 
-4. Update `.env.local` with your backend URL
+4. Update `.env.local` with your backend URL and AI API keys
 ```
 VITE_API_BASE_URL=http://localhost:3001/api
+
+# Free AI APIs for AskAI functionality (get from respective services)
+VITE_TOGETHER_API_KEY=your-together-ai-key-here
+VITE_HUGGINGFACE_API_KEY=your-huggingface-token-here
+VITE_REPLICATE_API_KEY=your-replicate-token-here
+VITE_OPENAI_API_KEY=your-openai-key-here  # Optional
 ```
+
+### AI API Setup (For AskAI Feature)
+
+The AskAI page uses multiple free AI services as fallbacks. Get API keys from:
+
+- **Together AI**: https://together.ai (Free tier available)
+- **Hugging Face**: https://huggingface.co (Free inference API)
+- **Replicate**: https://replicate.com (Free tier available)
+- **OpenAI**: https://platform.openai.com (Optional - paid service)
+
+Without API keys, the AI will use intelligent fallback responses based on keywords.
 
 5. Start development server
 ```bash
