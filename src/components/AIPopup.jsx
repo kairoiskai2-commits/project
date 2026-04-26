@@ -104,14 +104,22 @@ export default function AIPopup() {
     setMessages(prev => [...prev, { role: 'user', content: msg }]);
     setLoading(true);
 
-    // Search Wikipedia for the user query first
-    const wikiSearch = await db.integrations.External.wikipedia('search', { query: msg });
+    // Detect query language and search the proper Wikipedia domain
+    const detectWikiLang = (text) => {
+      if (/[\u0600-\u06FF]/.test(text)) return 'ar';
+      if (/[\u4E00-\u9FFF]/.test(text)) return 'zh';
+      if (/[\u3040-\u30FF]/.test(text)) return 'ja';
+      return 'en';
+    };
+
+    const wikiLang = detectWikiLang(msg);
+    const wikiSearch = await db.integrations.External.wikipedia('search', { query: msg, lang: wikiLang });
     let response = '';
     let wikiDetails = null;
 
     if (wikiSearch.success && wikiSearch.count > 0 && wikiSearch.results?.length > 0) {
       const title = wikiSearch.results[0].title;
-      wikiDetails = await db.integrations.External.wikipedia('page', { title });
+      wikiDetails = await db.integrations.External.wikipedia('page', { title, lang: wikiLang });
 
       if (wikiDetails.success && wikiDetails.extract) {
         response = `${wikiDetails.extract}

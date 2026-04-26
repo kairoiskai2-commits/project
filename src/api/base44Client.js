@@ -597,10 +597,13 @@ const integrations = {
   External: {
     wikipedia: async (action, params) => {
       try {
+        const query = params.query || params.search || params.title || 'Egypt';
+        const lang = params.lang || (/[ -]/.test(query) ? 'en' : /[\u0600-\u06FF]/.test(query) ? 'ar' : 'en');
+        const host = `${lang}.wikipedia.org`;
+
         // Handle search action - returns search results
         if (action === 'search') {
-          const query = params.query || params.search || 'Egypt';
-          const url = new URL('https://en.wikipedia.org/w/api.php');
+          const url = new URL(`https://${host}/w/api.php`);
           url.searchParams.set('action', 'query');
           url.searchParams.set('list', 'search');
           url.searchParams.set('srsearch', query);
@@ -611,38 +614,81 @@ const integrations = {
 
           const response = await fetch(url.toString());
           if (!response.ok) throw new Error(`Wikipedia search failed: ${response.status}`);
-          
+
           const data = await response.json();
           const results = data.query?.search || [];
-          
+
+          if (results.length === 0 && lang !== 'en') {
+            const fallbackUrl = new URL('https://en.wikipedia.org/w/api.php');
+            fallbackUrl.searchParams.set('action', 'query');
+            fallbackUrl.searchParams.set('list', 'search');
+            fallbackUrl.searchParams.set('srsearch', query);
+            fallbackUrl.searchParams.set('format', 'json');
+            fallbackUrl.searchParams.set('origin', '*');
+            fallbackUrl.searchParams.set('srlimit', '5');
+            fallbackUrl.searchParams.set('srprop', 'snippet|titlesnippet|wordcount|timestamp');
+
+            const fallbackResponse = await fetch(fallbackUrl.toString());
+            if (fallbackResponse.ok) {
+              const fallbackData = await fallbackResponse.json();
+              const fallbackResults = fallbackData.query?.search || [];
+              if (fallbackResults.length > 0) {
+                return {
+                  results: fallbackResults.map(r => ({ title: r.title, snippet: r.snippet })),
+                  count: fallbackResults.length,
+                  success: true,
+                  source: 'Wikipedia Search (Fallback en.wikipedia.org)'
+                };
+              }
+            }
+          }
+
           return {
             results: results.map(r => ({ title: r.title, snippet: r.snippet })),
             count: results.length,
             success: results.length > 0,
-            source: 'Wikipedia Search (MediaWiki API)'
+            source: `Wikipedia Search (${host})`
           };
         }
 
         // Default action - get page details by title
-        const query = params.query || params.title || params.search || 'Egypt';
-        const url = new URL('https://en.wikipedia.org/w/api.php');
-        url.searchParams.set('action', 'query');
-        url.searchParams.set('titles', query);
-        url.searchParams.set('prop', 'extracts|coordinates|pageimages');
-        url.searchParams.set('exintro', 'true');
-        url.searchParams.set('explaintext', 'true');
-        url.searchParams.set('pithumbsize', '800');
-        url.searchParams.set('format', 'json');
-        url.searchParams.set('origin', '*');
+        const pageUrl = new URL(`https://${host}/w/api.php`);
+        pageUrl.searchParams.set('action', 'query');
+        pageUrl.searchParams.set('titles', query);
+        pageUrl.searchParams.set('prop', 'extracts|coordinates|pageimages');
+        pageUrl.searchParams.set('exintro', 'true');
+        pageUrl.searchParams.set('explaintext', 'true');
+        pageUrl.searchParams.set('pithumbsize', '800');
+        pageUrl.searchParams.set('format', 'json');
+        pageUrl.searchParams.set('origin', '*');
 
-        const response = await fetch(url.toString());
+        let response = await fetch(pageUrl.toString());
         if (!response.ok) throw new Error(`Wikipedia API error: ${response.status}`);
 
-        const data = await response.json();
-        const pages = data.query?.pages || {};
-        const pageId = Object.keys(pages)[0];
-        
-        if (pageId === '-1') {
+        let data = await response.json();
+        let pages = data.query?.pages || {};
+        let pageId = Object.keys(pages)[0];
+
+        if (pageId === '-1' && lang !== 'en') {
+          const fallbackPageUrl = new URL('https://en.wikipedia.org/w/api.php');
+          fallbackPageUrl.searchParams.set('action', 'query');
+          fallbackPageUrl.searchParams.set('titles', query);
+          fallbackPageUrl.searchParams.set('prop', 'extracts|coordinates|pageimages');
+          fallbackPageUrl.searchParams.set('exintro', 'true');
+          fallbackPageUrl.searchParams.set('explaintext', 'true');
+          fallbackPageUrl.searchParams.set('pithumbsize', '800');
+          fallbackPageUrl.searchParams.set('format', 'json');
+          fallbackPageUrl.searchParams.set('origin', '*');
+
+          const fallbackResponse = await fetch(fallbackPageUrl.toString());
+          if (fallbackResponse.ok) {
+            data = await fallbackResponse.json();
+            pages = data.query?.pages || {};
+            pageId = Object.keys(pages)[0];
+          }
+        }
+
+        if (!pageId || pageId === '-1') {
           throw new Error('Page not found');
         }
 
@@ -652,9 +698,9 @@ const integrations = {
           extract: page.extract,
           thumbnail: page.thumbnail?.source,
           coordinates: page.coordinates?.[0] || null,
-          url: `https://en.wikipedia.org/wiki/${encodeURIComponent(page.title)}`,
+          url: `https://${host}/wiki/${encodeURIComponent(page.title)}`,
           success: true,
-          source: 'Wikipedia (MediaWiki API)'
+          source: `Wikipedia (${host})`
         };
       } catch (error) {
         console.error('Wikipedia API failed:', error);
