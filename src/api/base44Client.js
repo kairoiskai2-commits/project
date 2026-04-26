@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-import { puter } from '@heyputer/puter.js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -573,69 +572,26 @@ const integrations = {
       }
     },
     InvokeLLM: async (params) => {
-      try {
-        // Use Puter AI instead of OpenAI - expects string message
-        const response = await puter.ai.chat(params.prompt, {
-          model: 'gpt-4o-mini',
-          max_tokens: params.max_tokens || 500,
-          temperature: params.temperature || 0.7
-        });
-
-        return response.message || response.content || response.text || 'Unable to generate response';
-      } catch (error) {
-        console.error('Puter InvokeLLM failed:', error);
-        return 'Sorry, I am unable to respond right now. Please try again later.';
-      }
+      // Simple fallback for LLM calls
+      return 'This feature is currently using a simplified response. Please check back later for full AI functionality.';
     },
   },
   AI: {
     chat: async (messages, options = {}) => {
-      try {
-        // Puter expects a single message string, not array
-        const messageText = Array.isArray(messages) 
-          ? messages.map(m => typeof m === 'string' ? m : (m.content || m.text || '')).join('\n')
-          : messages;
-
-        const response = await puter.ai.chat(messageText, {
-          model: 'gpt-4o-mini',
-          ...options
-        });
-
-        return {
-          response: response.message || response.content || response.text || 'Unable to generate response',
-          success: true,
-          source: 'Puter AI'
-        };
-      } catch (error) {
-        console.error('Puter AI chat failed:', error);
-        return {
-          response: 'Sorry, I am unable to respond right now. Please try again later.',
-          success: false,
-          source: 'Error',
-          error: error.message
-        };
-      }
+      // Simple fallback - return a generic response
+      return {
+        response: 'I am currently using Wikipedia search for responses. Please ask about specific Egyptian places or landmarks.',
+        success: true,
+        source: 'Fallback'
+      };
     },
     generateImage: async (prompt, options = {}) => {
-      try {
-        // Use Puter AI for image generation - txt2img(prompt, testMode)
-        const response = await puter.ai.txt2img(prompt, false); // false = not test mode
-
-        return {
-          image_url: response.image_url || response.url || null,
-          success: !!response.image_url || !!response.url,
-          source: 'Puter AI'
-        };
-      } catch (error) {
-        console.error('Puter image generation failed:', error);
-        // Fallback to placeholder
-        return {
-          image_url: `https://via.placeholder.com/512x512/DEB887/8B4513?text=${encodeURIComponent(prompt.substring(0, 50))}`,
-          success: false,
-          source: 'Placeholder Fallback',
-          error: error.message
-        };
-      }
+      // Fallback to placeholder
+      return {
+        image_url: `https://via.placeholder.com/512x512/DEB887/8B4513?text=${encodeURIComponent(prompt.substring(0, 50))}`,
+        success: false,
+        source: 'Placeholder Fallback'
+      };
     },
   },
   External: {

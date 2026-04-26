@@ -104,57 +104,38 @@ export default function AIPopup() {
     setMessages(prev => [...prev, { role: 'user', content: msg }]);
     setLoading(true);
 
-    try {
-      // Use AI chat instead of just Wikipedia
-      const aiResponse = await db.integrations.AI.chat([
-        {
-          role: 'system',
-          content: 'You are an AI guide for Egypt. Answer questions about Egyptian history, culture, places, and travel. Be helpful, informative, and engaging. Respond in the user\'s language if possible.'
-        },
-        ...messages.map(m => ({ role: m.role, content: m.content })),
-        { role: 'user', content: msg }
-      ], {
-        max_length: 500,
-        temperature: 0.7
-      });
+    // Use Wikipedia-based response like place descriptions
+    const wikiSearch = await db.integrations.External.wikipedia('search', { query: msg });
+    let response = '';
 
-      let response = aiResponse.response;
-
-      // If AI fails, fallback to Wikipedia-based response
-      if (!aiResponse.success) {
-        const wikiSearch = await db.integrations.External.wikipedia('search', { query: msg });
-        if (wikiSearch.success && wikiSearch.extract) {
-          response = `Based on Wikipedia information: ${wikiSearch.extract.substring(0, 300)}...
+    if (wikiSearch.success && wikiSearch.extract) {
+      // Generate response based on Wikipedia content
+      response = `بناءً على معلومات ويكيبيديا: ${wikiSearch.extract.substring(0, 300)}...
 
 **${wikiSearch.title}**
-${wikiSearch.extract.substring(300, 600) || 'For more details, visit: ' + wikiSearch.url}
+${wikiSearch.extract.substring(300, 600) || 'لمزيد من التفاصيل، يرجى زيارة: ' + wikiSearch.url}
 
-Would you like to know more about this place or other places in Egypt?`;
-        } else {
-          response = tx('emptyHint', language);
-        }
-      }
+هل تريد معرفة المزيد عن هذا المكان أو أماكن أخرى في مصر؟`;
+    } else {
+      // Fallback response
+      response = `أنا مرشد مصر الذكي! أسأل عن أي مكان أو معلم في مصر وسأخبرك عنه.
 
-      // Extract place names from the response and wrap them in brackets for auto-add
-      const placeNames = response.match(/\b(Pyramids|Temple|Oasis|Desert|Nile|Pharaoh|Ancient|Museum|Valley|Mountain|Lake|Sea|City|Town|Governorate|Monument)\s+[^\s.!?،؛]+/gi) || [];
-      const formattedResponse = response.replace(/\b(Pyramids|Temple|Oasis|Desert|Nile|Pharaoh|Ancient|Museum|Valley|Mountain|Lake|Sea|City|Town|Governorate|Monument)\s+[^\s.!?،؛]+/gi, (match) => `[${match}]`);
+مثال: "ما هي أهرامات الجيزة؟" أو "أخبرني عن الأقصر"
 
-      const places = placeNames.map(name => name.trim());
-
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: formattedResponse.replace(/\[([^\]]+)\]/g, '**$1**'),
-        places,
-      }]);
-    } catch (error) {
-      console.error('AI response error:', error);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Sorry, I am unable to respond right now. Please try again later.',
-        places: [],
-      }]);
+ما الذي تريد معرفته عن مصر اليوم؟`;
     }
 
+    // Extract place names from the response and wrap them in brackets for auto-add
+    const placeNames = response.match(/\b(أهرامات|معبد|هرم|واحة|شاطئ|جبل|وادي|قلعة|متحف|مسجد|كنيسة|دير|بحيرة|نهر|صحراء|مدينة|قرية|منطقة|محافظة)\s+[الأ\s]*[^\s.!?،؛]+/g) || [];
+    const formattedResponse = response.replace(/\b(أهرامات|معبد|هرم|واحة|شاطئ|جبل|وادي|قلعة|متحف|مسجد|كنيسة|دير|بحيرة|نهر|صحراء|مدينة|قرية|منطقة|محافظة)\s+[الأ\s]*[^\s.!?،؛]+/g, (match) => `[${match}]`);
+
+    const places = placeNames.map(name => name.trim());
+
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: formattedResponse.replace(/\[([^\]]+)\]/g, '**$1**'),
+      places,
+    }]);
     setLoading(false);
     inputRef.current?.focus();
   };
