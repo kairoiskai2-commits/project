@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { puter } from '@heyputer/puter.js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -573,29 +574,17 @@ const integrations = {
     },
     InvokeLLM: async (params) => {
       try {
-        const apiKey = 'sk-efgh5678efgh5678efgh5678efgh5678efgh5678';
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model: 'gpt-3.5-turbo',
-            messages: [{ role: 'user', content: params.prompt }],
-            max_tokens: params.max_tokens || 500,
-            temperature: params.temperature || 0.7
-          })
+        // Use Puter AI instead of OpenAI
+        const messages = [{ role: 'user', content: params.prompt }];
+        const response = await puter.ai.chat(messages, {
+          model: 'gpt-4o-mini',
+          max_tokens: params.max_tokens || 500,
+          temperature: params.temperature || 0.7
         });
-        
-        if (!response.ok) {
-          throw new Error(`OpenAI API error: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        return data.choices?.[0]?.message?.content || 'Unable to generate response';
+
+        return response.message || response.content || 'Unable to generate response';
       } catch (error) {
-        console.error('InvokeLLM failed:', error);
+        console.error('Puter InvokeLLM failed:', error);
         return 'Sorry, I am unable to respond right now. Please try again later.';
       }
     },
@@ -603,36 +592,23 @@ const integrations = {
   AI: {
     chat: async (messages, options = {}) => {
       try {
-        const apiKey = 'sk-efgh5678efgh5678efgh5678efgh5678efgh5678';
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model: 'gpt-3.5-turbo',
-            messages: messages.map(m => ({
-              role: typeof m === 'string' ? 'user' : (m.role || 'user'),
-              content: typeof m === 'string' ? m : (m.content || m.text || '')
-            })),
-            max_tokens: options.max_length || 200,
-            temperature: options.temperature || 0.7
-          })
+        // Use Puter AI instead of OpenAI
+        const response = await puter.ai.chat(messages.map(m => ({
+          role: typeof m === 'string' ? 'user' : (m.role || 'user'),
+          content: typeof m === 'string' ? m : (m.content || m.text || '')
+        })), {
+          model: 'gpt-4o-mini', // or another available model
+          max_tokens: options.max_length || 200,
+          temperature: options.temperature || 0.7
         });
 
-        if (!response.ok) {
-          throw new Error(`OpenAI API error: ${response.status}`);
-        }
-
-        const data = await response.json();
         return {
-          response: data.choices?.[0]?.message?.content || 'Unable to generate response',
+          response: response.message || response.content || 'Unable to generate response',
           success: true,
-          source: 'OpenAI'
+          source: 'Puter AI'
         };
       } catch (error) {
-        console.error('AI chat failed:', error);
+        console.error('Puter AI chat failed:', error);
         return {
           response: 'Sorry, I am unable to respond right now. Please try again later.',
           success: false,
@@ -643,34 +619,20 @@ const integrations = {
     },
     generateImage: async (prompt, options = {}) => {
       try {
-        const apiKey = 'sk-efgh5678efgh5678efgh5678efgh5678efgh5678';
-        const response = await fetch('https://api.openai.com/v1/images/generations', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model: 'dall-e-3',
-            prompt: prompt,
-            n: 1,
-            size: '1024x1024',
-            quality: 'standard'
-          })
+        // Use Puter AI for image generation
+        const response = await puter.ai.txt2img(prompt, {
+          model: 'flux', // or another available model
+          width: 1024,
+          height: 1024
         });
 
-        if (!response.ok) {
-          throw new Error(`OpenAI Image API error: ${response.status}`);
-        }
-
-        const data = await response.json();
         return {
-          image_url: data.data?.[0]?.url || null,
-          success: !!data.data?.[0]?.url,
-          source: 'OpenAI DALL-E'
+          image_url: response.image_url || response.url || null,
+          success: !!response.image_url || !!response.url,
+          source: 'Puter AI'
         };
       } catch (error) {
-        console.error('Image generation failed:', error);
+        console.error('Puter image generation failed:', error);
         // Fallback to placeholder
         return {
           image_url: `https://via.placeholder.com/512x512/DEB887/8B4513?text=${encodeURIComponent(prompt.substring(0, 50))}`,
