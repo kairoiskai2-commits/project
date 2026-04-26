@@ -574,15 +574,14 @@ const integrations = {
     },
     InvokeLLM: async (params) => {
       try {
-        // Use Puter AI instead of OpenAI
-        const messages = [{ role: 'user', content: params.prompt }];
-        const response = await puter.ai.chat(messages, {
+        // Use Puter AI instead of OpenAI - expects string message
+        const response = await puter.ai.chat(params.prompt, {
           model: 'gpt-4o-mini',
           max_tokens: params.max_tokens || 500,
           temperature: params.temperature || 0.7
         });
 
-        return response.message || response.content || 'Unable to generate response';
+        return response.message || response.content || response.text || 'Unable to generate response';
       } catch (error) {
         console.error('Puter InvokeLLM failed:', error);
         return 'Sorry, I am unable to respond right now. Please try again later.';
@@ -592,18 +591,18 @@ const integrations = {
   AI: {
     chat: async (messages, options = {}) => {
       try {
-        // Use Puter AI instead of OpenAI
-        const response = await puter.ai.chat(messages.map(m => ({
-          role: typeof m === 'string' ? 'user' : (m.role || 'user'),
-          content: typeof m === 'string' ? m : (m.content || m.text || '')
-        })), {
-          model: 'gpt-4o-mini', // or another available model
-          max_tokens: options.max_length || 200,
-          temperature: options.temperature || 0.7
+        // Puter expects a single message string, not array
+        const messageText = Array.isArray(messages) 
+          ? messages.map(m => typeof m === 'string' ? m : (m.content || m.text || '')).join('\n')
+          : messages;
+
+        const response = await puter.ai.chat(messageText, {
+          model: 'gpt-4o-mini',
+          ...options
         });
 
         return {
-          response: response.message || response.content || 'Unable to generate response',
+          response: response.message || response.content || response.text || 'Unable to generate response',
           success: true,
           source: 'Puter AI'
         };
@@ -619,12 +618,8 @@ const integrations = {
     },
     generateImage: async (prompt, options = {}) => {
       try {
-        // Use Puter AI for image generation
-        const response = await puter.ai.txt2img(prompt, {
-          model: 'flux', // or another available model
-          width: 1024,
-          height: 1024
-        });
+        // Use Puter AI for image generation - txt2img(prompt, testMode)
+        const response = await puter.ai.txt2img(prompt, false); // false = not test mode
 
         return {
           image_url: response.image_url || response.url || null,
