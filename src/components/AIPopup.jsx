@@ -104,26 +104,34 @@ export default function AIPopup() {
     setMessages(prev => [...prev, { role: 'user', content: msg }]);
     setLoading(true);
 
-    // Always use Wikipedia search - no intro messages
+    // Search Wikipedia for the user query first
     const wikiSearch = await db.integrations.External.wikipedia('search', { query: msg });
     let response = '';
+    let wikiDetails = null;
 
-    if (wikiSearch.success && wikiSearch.extract) {
-      // Return Wikipedia content directly
-      response = `${wikiSearch.extract}
+    if (wikiSearch.success && wikiSearch.count > 0 && wikiSearch.results?.length > 0) {
+      const title = wikiSearch.results[0].title;
+      wikiDetails = await db.integrations.External.wikipedia('page', { title });
 
-**${wikiSearch.title}**
-${wikiSearch.url ? `Source: ${wikiSearch.url}` : ''}`;
+      if (wikiDetails.success && wikiDetails.extract) {
+        response = `${wikiDetails.extract}
+
+**${wikiDetails.title}**
+${wikiDetails.url ? `Source: ${wikiDetails.url}` : ''}`;
+      } else {
+        response = `No detailed information found for "${msg}". Try another Egyptian place.`;
+      }
     } else {
-      // Simple fallback if no Wikipedia results
-      response = `No information found for "${msg}". Try searching for specific Egyptian places like "Pyramids of Giza" or "Luxor Temple".`;
+      response = `No information found for "${msg}". Try searching for Egyptian places like "Pyramids of Giza" or "Luxor Temple".`;
     }
 
-    // Extract place names from the response and wrap them in brackets for auto-add
-    const placeNames = response.match(/\b(أهرامات|معبد|هرم|واحة|شاطئ|جبل|وادي|قلعة|متحف|مسجد|كنيسة|دير|بحيرة|نهر|صحراء|مدينة|قرية|منطقة|محافظة)\s+[الأ\s]*[^\s.!?،؛]+/g) || [];
-    const formattedResponse = response.replace(/\b(أهرامات|معبد|هرم|واحة|شاطئ|جبل|وادي|قلعة|متحف|مسجد|كنيسة|دير|بحيرة|نهر|صحراء|مدينة|قرية|منطقة|محافظة)\s+[الأ\s]*[^\s.!?،؛]+/g, (match) => `[${match}]`);
+    const placeNames = response.match(/\b(أهرامات|معبد|هرم|واحة|شاطئ|جبل|وادي|قلعة|متحف|مسجد|كنيسة|دير|بحيرة|نهر|صحراء|مدينة|قرية|منطقة|محافظة|Pyramids|Pyramid|Temple|Oasis|Desert|Nile|Valley|Museum|Sphinx|City|Temple|Luxor|Giza|Cairo|Alexandria|Aswan|Saqqara|Abu Simbel|Karnak|Philae)\s+[^\s.!?،؛]+/gi) || [];
+    const formattedResponse = response.replace(/\b(أهرامات|معبد|هرم|واحة|شاطئ|جبل|وادي|قلعة|متحف|مسجد|كنيسة|دير|بحيرة|نهر|صحراء|مدينة|قرية|منطقة|محافظة|Pyramids|Pyramid|Temple|Oasis|Desert|Nile|Valley|Museum|Sphinx|City|Temple|Luxor|Giza|Cairo|Alexandria|Aswan|Saqqara|Abu Simbel|Karnak|Philae)\s+[^\s.!?،؛]+/gi, (match) => `[${match}]`);
 
-    const places = placeNames.map(name => name.trim());
+    let places = placeNames.map(name => name.trim());
+    if (places.length === 0 && wikiDetails?.title) {
+      places = [wikiDetails.title];
+    }
 
     setMessages(prev => [...prev, {
       role: 'assistant',
