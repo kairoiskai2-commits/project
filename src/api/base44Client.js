@@ -589,18 +589,30 @@ const integrations = {
 
         if (params.provider === 'groq' && !response) {
           try {
-            const apiResponse = await fetch('/api/groq', {
+            const groqProxyBody = JSON.stringify({
+              model: GROQ_MODEL,
+              messages: [{ role: 'user', content: prompt }],
+              max_tokens: params.max_tokens || 800,
+              temperature: params.temperature ?? 0.7,
+            });
+
+            let apiResponse = await fetch('/api/groq', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({
-                model: GROQ_MODEL,
-                messages: [{ role: 'user', content: prompt }],
-                max_tokens: params.max_tokens || 800,
-                temperature: params.temperature ?? 0.7,
-              }),
+              body: groqProxyBody,
             });
+
+            if (apiResponse.status === 404 || apiResponse.status === 405) {
+              apiResponse = await fetch('/api/groq/', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: groqProxyBody,
+              });
+            }
 
             if (apiResponse.ok) {
               const data = await apiResponse.json();

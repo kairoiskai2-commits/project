@@ -6,7 +6,19 @@ const json = (body, status = 200) =>
     },
   });
 
-export async function onRequestPost({ request, env }) {
+export async function onRequest({ request, env }) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204 });
+  }
+
+  if (request.method === 'GET') {
+    return json({ ok: true, service: 'groq' });
+  }
+
+  if (request.method !== 'POST') {
+    return json({ error: 'Method not allowed' }, 405);
+  }
+
   const apiKey = env.GROQ_API_KEY || env.VITE_GROQ_API_KEY;
 
   if (!apiKey) {
@@ -48,8 +60,4 @@ export async function onRequestPost({ request, env }) {
       'Content-Type': groqResponse.headers.get('Content-Type') || 'application/json',
     },
   });
-}
-
-export function onRequestGet() {
-  return json({ ok: true, service: 'groq' });
 }
