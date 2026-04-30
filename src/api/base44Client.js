@@ -723,21 +723,74 @@ const integrations = {
         return 'This feature is currently using simplified responses. Please check back later for full AI functionality.';
       }
     },
+  },
+  AI: {
+    chat: async (messages, options = {}) => {
+      try {
+        const userMessage = messages[messages.length - 1]?.content || '';
+        let aiResponse = '';
+
+        // 1. Try Together AI free tier
+        const TOGETHER_API_KEY = import.meta.env.VITE_TOGETHER_API_KEY;
+        if (TOGETHER_API_KEY && !aiResponse) {
+          try {
+            const response = await fetch('https://api.together.xyz/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${TOGETHER_API_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'meta-llama/Llama-2-7b-chat-hf',
+                messages: messages,
+                max_tokens: options.max_length || 500,
+                temperature: options.temperature || 0.7,
               }),
             });
 
-            if (apiResponse.ok) {
-              const data = await apiResponse.json();
-              response = data[0]?.generated_text || '';
+            if (response.ok) {
+              const data = await response.json();
+              aiResponse = data.choices?.[0]?.message?.content || '';
             }
           } catch (error) {
-            console.warn('Hugging Face LLM failed:', error);
+            console.warn('Together AI chat failed:', error);
+          }
+        }
+
+        // 2. Try Hugging Face conversational AI
+        if (!aiResponse) {
+          try {
+            const response = await fetch('https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                inputs: {
+                  past_user_inputs: messages.slice(0, -1).map(m => m.content),
+                  generated_responses: [],
+                  text: userMessage
+                },
+                parameters: {
+                  max_length: options.max_length || 200,
+                  temperature: options.temperature || 0.7,
+                  do_sample: true,
+                },
+              }),
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              aiResponse = data.conversation?.generated_responses?.[0] || data.generated_text || '';
+            }
+          } catch (error) {
+            console.warn('Hugging Face chat failed:', error);
           }
         }
 
         // 3. Try Replicate
         const REPLICATE_API_KEY = import.meta.env.VITE_REPLICATE_API_KEY;
-        if (REPLICATE_API_KEY && !response) {
+        if (REPLICATE_API_KEY && !aiResponse) {
           try {
             const apiResponse = await fetch('https://api.replicate.com/v1/models/meta/llama-2-7b-chat/predictions', {
               method: 'POST',
