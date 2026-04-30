@@ -202,8 +202,8 @@ ${wikiDetails.url ? `Source: ${wikiDetails.url}` : ''}`;
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setOpen(true)}
-            className="fixed bottom-6 right-6 rtl:right-auto rtl:left-6 z-50 w-14 h-14 rounded-2xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 28px rgba(201,150,58,0.5), 0 8px 32px rgba(0,0,0,0.4)' }}>
+            className="fixed bottom-24 right-5 rtl:right-auto rtl:left-5 sm:bottom-6 sm:right-6 sm:rtl:left-6 z-50 w-14 h-14 rounded-2xl flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg,#f0c060,#9b742c)', boxShadow: '0 0 28px rgba(201,150,58,0.5), 0 8px 32px rgba(0,0,0,0.45)' }}>
             <Brain className="w-6 h-6 text-stone-900" />
             <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-stone-950 animate-pulse" />
           </motion.button>
@@ -218,26 +218,26 @@ ${wikiDetails.url ? `Source: ${wikiDetails.url}` : ''}`;
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.96 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="fixed bottom-6 right-6 rtl:right-auto rtl:left-6 z-50 w-[360px] max-w-[calc(100vw-2rem)]">
+            className="fixed bottom-24 right-4 rtl:right-auto rtl:left-4 sm:bottom-6 sm:right-6 sm:rtl:left-6 z-50 w-[390px] max-w-[calc(100vw-2rem)]">
 
-            <div className={`rounded-3xl overflow-hidden transition-all duration-300 ${minimized ? 'h-[56px]' : 'h-[520px]'}`}
-              style={{ background: 'rgba(8,10,20,0.97)', border: '1px solid rgba(201,150,58,0.25)', backdropFilter: 'blur(24px)', boxShadow: '0 0 60px rgba(0,0,0,0.7), 0 0 30px rgba(201,150,58,0.1)' }}>
+            <div className={`rounded-3xl overflow-hidden transition-all duration-300 flex flex-col ${minimized ? 'h-[58px]' : 'h-[560px] sm:h-[580px] max-h-[calc(100vh-7rem)]'}`}
+              style={{ background: 'linear-gradient(180deg, rgba(12,14,24,0.98), rgba(6,7,13,0.98))', border: '1px solid rgba(240,192,96,0.28)', backdropFilter: 'blur(24px)', boxShadow: '0 24px 80px rgba(0,0,0,0.75), 0 0 34px rgba(201,150,58,0.16)' }}>
 
               {/* Header */}
-              <div className="flex items-center gap-2.5 px-4 py-3 border-b"
-                style={{ borderColor: 'rgba(201,150,58,0.15)', background: 'rgba(201,150,58,0.06)' }}>
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center text-base"
+              <div className="flex items-center gap-3 px-4 py-3 border-b shrink-0"
+                style={{ borderColor: 'rgba(240,192,96,0.16)', background: 'linear-gradient(135deg, rgba(240,192,96,0.11), rgba(255,255,255,0.025))' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-base"
                   style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)' }}>𓂀</div>
                 <div className="flex-1">
-                  <p className="font-black text-stone-200 text-sm leading-none">{tx('title', language)}</p>
-                  <p className="text-emerald-400 text-[10px] font-mono mt-0.5">{tx('online', language)}</p>
+                  <p className="font-black text-stone-100 text-sm leading-none">{tx('title', language)}</p>
+                  <p className="text-emerald-300 text-[10px] font-mono mt-1">{tx('online', language)} · web guide</p>
                 </div>
                 <button onClick={() => setMinimized(!minimized)}
-                  className="p-1.5 text-stone-500 hover:text-stone-300 rounded-lg hover:bg-white/5 transition-all">
+                  className="p-1.5 text-stone-400 hover:text-stone-100 rounded-lg hover:bg-white/10 transition-all">
                   {minimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
                 </button>
                 <button onClick={() => setOpen(false)}
-                  className="p-1.5 text-stone-500 hover:text-red-400 rounded-lg hover:bg-white/5 transition-all">
+                  className="p-1.5 text-stone-400 hover:text-red-300 rounded-lg hover:bg-white/10 transition-all">
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -245,16 +245,17 @@ ${wikiDetails.url ? `Source: ${wikiDetails.url}` : ''}`;
               {!minimized && (
                 <>
                   {/* Messages */}
-                  <div ref={scrollRef} className="h-[412px] overflow-y-auto p-4 space-y-4">
+                  <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
                     {messages.length === 0 ? (
                       <div className="text-center py-4">
                         <div className="text-4xl mb-2">𓂀</div>
-                        <p className="text-stone-400 text-sm mb-3 font-medium">{tx('emptyHint', language)}</p>
-                        <div className="space-y-2">
+                        <p className="text-stone-200 text-sm mb-1 font-bold">{tx('title', language)}</p>
+                        <p className="text-stone-400 text-xs mb-4 font-medium">{tx('emptyHint', language)}</p>
+                        <div className="grid gap-2">
                           {suggestions.map((q, i) => (
                             <button key={i} onClick={() => handleSend(q)}
-                              className="block w-full text-xs px-3 py-2 rounded-xl transition-all hover:scale-[1.01] text-left rtl:text-right"
-                              style={{ background: 'rgba(201,150,58,0.06)', border: '1px solid rgba(201,150,58,0.2)', color: '#c9963a' }}>
+                              className="block w-full text-xs px-3 py-2.5 rounded-xl transition-all hover:scale-[1.01] text-left rtl:text-right"
+                              style={{ background: 'rgba(255,255,255,0.045)', border: '1px solid rgba(240,192,96,0.18)', color: '#f8d98a' }}>
                               {q}
                             </button>
                           ))}
@@ -283,26 +284,26 @@ ${wikiDetails.url ? `Source: ${wikiDetails.url}` : ''}`;
                               <div className={`relative rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-lg ${
                                 msg.role === 'user'
                                   ? 'bg-gradient-to-br from-stone-700 to-stone-800 text-stone-100 border border-stone-600'
-                                  : 'bg-gradient-to-br from-amber-50 to-yellow-100 text-stone-800 border border-amber-200'
+                                  : 'text-stone-100 border'
                               }`}
                                 style={msg.role === 'assistant' ? {
-                                  background: 'linear-gradient(135deg, rgba(201,150,58,0.1), rgba(122,92,32,0.05))',
-                                  border: '1px solid rgba(201,150,58,0.2)',
-                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1), 0 0 8px rgba(201,150,58,0.1)'
+                                  background: 'linear-gradient(135deg, rgba(24,22,18,0.96), rgba(201,150,58,0.12))',
+                                  borderColor: 'rgba(240,192,96,0.28)',
+                                  boxShadow: '0 6px 18px rgba(0,0,0,0.24), 0 0 10px rgba(201,150,58,0.1)'
                                 } : {}}>
                                 {/* Chat bubble tail */}
                                 <div className={`absolute top-3 w-3 h-3 transform rotate-45 ${
-                                  msg.role === 'user' ? '-right-1.5 bg-stone-700 border-r border-t border-stone-600' : '-left-1.5 bg-amber-50 border-l border-t border-amber-200'
+                                  msg.role === 'user' ? '-right-1.5 bg-stone-700 border-r border-t border-stone-600' : '-left-1.5 border-l border-t'
                                 }`}
                                   style={msg.role === 'assistant' ? {
-                                    background: 'linear-gradient(135deg, rgba(201,150,58,0.1), rgba(122,92,32,0.05))',
-                                    border: '1px solid rgba(201,150,58,0.2)'
+                                    background: 'linear-gradient(135deg, rgba(24,22,18,0.96), rgba(201,150,58,0.12))',
+                                    border: '1px solid rgba(240,192,96,0.28)'
                                   } : {}} />
 
                                 {msg.role === 'user' ? (
                                   <p className="text-stone-100">{msg.content}</p>
                                 ) : (
-                                  <div className="prose prose-xs prose-invert max-w-none prose-p:my-0.5">
+                                  <div className="prose prose-xs prose-invert max-w-none text-stone-100 prose-p:my-0.5 prose-p:text-stone-100 prose-li:text-stone-100 prose-strong:text-amber-100 prose-a:text-amber-200 prose-headings:text-stone-50">
                                     <ReactMarkdown>{msg.content}</ReactMarkdown>
                                   </div>
                                 )}
@@ -341,15 +342,15 @@ ${wikiDetails.url ? `Source: ${wikiDetails.url}` : ''}`;
                               }}>𓂀</div>
                             <div className="relative rounded-2xl px-3 py-2.5 shadow-lg"
                               style={{
-                                background: 'linear-gradient(135deg, rgba(201,150,58,0.1), rgba(122,92,32,0.05))',
-                                border: '1px solid rgba(201,150,58,0.2)',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.1), 0 0 8px rgba(201,150,58,0.1)'
+                                background: 'linear-gradient(135deg, rgba(24,22,18,0.96), rgba(201,150,58,0.12))',
+                                border: '1px solid rgba(240,192,96,0.28)',
+                                boxShadow: '0 6px 18px rgba(0,0,0,0.24), 0 0 10px rgba(201,150,58,0.1)'
                               }}>
                               {/* Chat bubble tail */}
                               <div className="absolute top-3 -left-1.5 w-3 h-3 transform rotate-45"
                                 style={{
-                                  background: 'linear-gradient(135deg, rgba(201,150,58,0.1), rgba(122,92,32,0.05))',
-                                  border: '1px solid rgba(201,150,58,0.2)'
+                                  background: 'linear-gradient(135deg, rgba(24,22,18,0.96), rgba(201,150,58,0.12))',
+                                  border: '1px solid rgba(240,192,96,0.28)'
                                 }} />
                               <TypingDots />
                             </div>
@@ -360,17 +361,17 @@ ${wikiDetails.url ? `Source: ${wikiDetails.url}` : ''}`;
                   </div>
 
                   {/* Input */}
-                  <div className="p-3 border-t flex gap-2" style={{ borderColor: 'rgba(201,150,58,0.12)' }}>
+                  <div className="p-3 border-t flex gap-2 shrink-0" style={{ borderColor: 'rgba(240,192,96,0.16)', background: 'rgba(0,0,0,0.18)' }}>
                     <input ref={inputRef}
                       value={input} onChange={e => setInput(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && handleSend()}
                       placeholder={tx('placeholder', language)}
                       disabled={loading}
-                      className="flex-1 bg-white/5 border border-white/8 rounded-xl px-3 py-2 text-xs text-stone-200 placeholder-stone-600 outline-none focus:border-[#c9963a]/40 transition-all"
+                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-stone-100 placeholder-stone-400 outline-none focus:border-[#f0c060]/50 transition-all"
                     />
                     <button onClick={() => handleSend()} disabled={loading || !input.trim()}
                       className="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-40 hover:scale-105"
-                      style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)' }}>
+                      style={{ background: 'linear-gradient(135deg,#f0c060,#9b742c)' }}>
                       {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-900" /> : <Send className="w-3.5 h-3.5 text-stone-900" />}
                     </button>
                   </div>

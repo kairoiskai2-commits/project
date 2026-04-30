@@ -581,7 +581,54 @@ const integrations = {
       try {
         const prompt = params.prompt || params.text || 'Hello';
         let response = '';
+        let webSearchError = '';
         let groqError = '';
+
+        if (params.provider === 'web' && !response) {
+          try {
+            const webSearchBody = JSON.stringify({
+              query: params.query || prompt,
+              prompt,
+              max_results: params.max_results || 6,
+            });
+
+            let apiResponse = await fetch('/api/search-answer', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: webSearchBody,
+            });
+
+            if (apiResponse.status === 404 || apiResponse.status === 405) {
+              apiResponse = await fetch('/api/search-answer/', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: webSearchBody,
+              });
+            }
+
+            if (apiResponse.ok) {
+              const data = await apiResponse.json();
+              response = data.content || '';
+            } else {
+              const errorText = await apiResponse.text();
+              webSearchError = `Google Search failed (${apiResponse.status}): ${errorText}`;
+              console.warn('Web search failed:', apiResponse.status, errorText);
+            }
+          } catch (error) {
+            webSearchError = error.message || String(error);
+            console.warn('Web search failed:', error);
+          }
+        }
+
+        if (params.provider === 'web' && !response) {
+          return webSearchError
+            ? `I could not search the web yet. ${webSearchError}`
+            : 'Web search is not configured yet. Add GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_CX in Cloudflare Pages, then redeploy.';
+        }
 
         // 1. Try Groq chat completions
         const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;

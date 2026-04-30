@@ -396,7 +396,7 @@ export default function Header() {
               animate={{ y: 0 }}
               exit={{ y: '110%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-              className="lg:hidden fixed left-0 right-0 bottom-0 z-[9999] max-h-[82vh] overflow-y-auto rounded-t-3xl"
+              className="lg:hidden fixed left-0 right-0 bottom-0 z-[9999] max-h-[calc(100vh-4rem)] overflow-y-auto rounded-t-3xl"
               style={{
                 background: 'rgb(8,5,12)',
                 borderTop: '1px solid rgba(201,150,58,0.32)',
@@ -419,6 +419,39 @@ export default function Header() {
               </div>
 
               <div className="px-4 py-4 space-y-5">
+                <div>
+                  <p className="text-stone-500 text-[10px] font-mono uppercase tracking-widest mb-2 px-1">
+                    {language === 'ar' ? 'Main' : 'Main'}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {NAV_PRIMARY.map(item => {
+                      const active = isActive(item.path);
+                      return (
+                        <Link key={item.path} to={createPageUrl(item.path)}
+                          onClick={() => setMobileOpen(false)}
+                          className={`flex items-center gap-2.5 min-h-[58px] px-3 py-2.5 rounded-2xl transition-all active:scale-95 ${
+                            active ? 'text-stone-950' : 'text-stone-300 hover:text-white'
+                          }`}
+                          style={active ? {
+                            background: 'linear-gradient(135deg,#f0c060,#9b742c)',
+                            boxShadow: '0 0 14px rgba(201,150,58,0.35)'
+                          } : {
+                            background: 'rgba(255,255,255,0.045)',
+                            border: '1px solid rgba(255,255,255,0.06)'
+                          }}>
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                            active ? 'bg-stone-900/30' : 'bg-white/5'
+                          }`}>
+                            <item.icon className="w-4 h-4" />
+                          </div>
+                          <span className="text-xs font-bold leading-tight flex-1">{label(item)}</span>
+                          {active && <ChevronRight className="w-4 h-4 opacity-60" />}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {NAV_MORE_GROUPS.map((group, gi) => (
                   <div key={gi}>
                     <p className="text-stone-500 text-[10px] font-mono uppercase tracking-widest mb-2 px-1">
