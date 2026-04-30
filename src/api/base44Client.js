@@ -586,6 +586,36 @@ const integrations = {
         // 1. Try Groq chat completions
         const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
         const GROQ_MODEL = import.meta.env.VITE_GROQ_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct';
+
+        if (params.provider === 'groq' && !response) {
+          try {
+            const apiResponse = await fetch('/api/groq', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: GROQ_MODEL,
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: params.max_tokens || 800,
+                temperature: params.temperature ?? 0.7,
+              }),
+            });
+
+            if (apiResponse.ok) {
+              const data = await apiResponse.json();
+              response = data.choices?.[0]?.message?.content || data.content || '';
+            } else if (apiResponse.status !== 404) {
+              const errorText = await apiResponse.text();
+              groqError = `Groq API failed (${apiResponse.status}): ${errorText}`;
+              console.warn('Groq proxy failed:', apiResponse.status, errorText);
+            }
+          } catch (error) {
+            groqError = error.message || String(error);
+            console.warn('Groq proxy failed:', error);
+          }
+        }
+
         if (hasUsableApiKey(GROQ_API_KEY) && !response) {
           try {
             const apiResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -617,8 +647,8 @@ const integrations = {
         }
 
         if (params.provider === 'groq' && !response) {
-          if (!hasUsableApiKey(GROQ_API_KEY)) {
-            return 'Groq is not configured yet. Add a real VITE_GROQ_API_KEY in your environment variables, then rebuild the app.';
+          if (!groqError && !hasUsableApiKey(GROQ_API_KEY)) {
+            return 'Groq is not configured yet. Add GROQ_API_KEY to your Cloudflare Pages environment variables, then redeploy.';
           }
 
           return groqError
