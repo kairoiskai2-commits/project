@@ -281,12 +281,12 @@ Respond in ${langName}. Be helpful, detailed, and engaging. ${activeBot === 'gui
                       <div className={`relative rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-lg ${
                         msg.role === 'user'
                           ? 'bg-gradient-to-br from-stone-700 to-stone-800 text-stone-100 border border-stone-600'
-                          : 'bg-gradient-to-br from-amber-50 to-yellow-100 text-stone-800 border border-amber-200'
+                          : 'text-stone-100 border'
                       }`}
                         style={msg.role === 'assistant' ? {
-                          background: `linear-gradient(135deg, ${bot.color}15, ${bot.color}05)`,
-                          border: `1px solid ${bot.color}30`,
-                          boxShadow: `0 4px 12px rgba(0,0,0,0.1), 0 0 8px ${bot.glow}`
+                          background: `linear-gradient(135deg, rgba(20,18,15,0.94), ${bot.color}14)`,
+                          borderColor: `${bot.color}42`,
+                          boxShadow: `0 4px 16px rgba(0,0,0,0.22), 0 0 8px ${bot.glow}`
                         } : {}}>
                         {/* Chat bubble tail */}
                         <div className={`absolute top-3 w-3 h-3 transform rotate-45 ${
@@ -295,14 +295,14 @@ Respond in ${langName}. Be helpful, detailed, and engaging. ${activeBot === 'gui
                             : `-left-1.5 border-l border-t`
                         }`}
                           style={msg.role === 'assistant' ? {
-                            background: `linear-gradient(135deg, ${bot.color}15, ${bot.color}05)`,
-                            border: `1px solid ${bot.color}30`
+                            background: `linear-gradient(135deg, rgba(20,18,15,0.94), ${bot.color}14)`,
+                            border: `1px solid ${bot.color}42`
                           } : {}} />
 
                         {msg.role === 'user' ? (
                           <p className="text-stone-100">{msg.content}</p>
                         ) : (
-                          <div className="prose prose-sm prose-invert max-w-none prose-p:my-1 prose-headings:text-stone-200">
+                          <div className="prose prose-sm prose-invert max-w-none text-stone-100 prose-p:my-1 prose-p:text-stone-100 prose-li:text-stone-100 prose-strong:text-amber-100 prose-headings:text-stone-50 prose-a:text-amber-200">
                             <ReactMarkdown>{msg.content}</ReactMarkdown>
                           </div>
                         )}

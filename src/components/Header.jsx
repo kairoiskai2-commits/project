@@ -7,11 +7,11 @@ import { useLanguage, LANGUAGES } from './LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 
 import {
-  Sun, Moon, Globe, Menu, X, Home, Compass, Map,
+  Sun, Moon, Globe, X, Home, Compass, Map,
   Search, LogOut, ChevronDown, UserCircle, Shield, Heart,
   Calendar, DollarSign, Users, Zap, Bot,
   Trophy, Navigation, Brain, Luggage, BarChart2, Cloud, Code2, Ticket,
-  Rss, Feather, Box, BookOpen, Camera, ChevronRight
+  Rss, Feather, Box, BookOpen, Camera, ChevronRight, MoreHorizontal
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -112,6 +112,12 @@ export default function Header() {
   const groupLabel = (g) => language === 'ar' ? g.label_ar : g.label_en;
 
   const anyMoreActive = NAV_MORE_FLAT.some(i => isActive(i.path));
+  const mobileTabs = [
+    NAV_PRIMARY.find(item => item.path === 'Home'),
+    NAV_PRIMARY.find(item => item.path === 'Explore'),
+    NAV_PRIMARY.find(item => item.path === 'AskAI'),
+    NAV_PRIMARY.find(item => item.path === 'Search'),
+  ].filter(Boolean);
 
   return (
     <header
@@ -337,22 +343,155 @@ export default function Header() {
             </button>
           )}
 
-          {/* Mobile hamburger */}
-          <button onClick={() => setMobileOpen(v => !v)}
-            className="lg:hidden w-8 h-8 rounded-xl flex items-center justify-center text-stone-400 hover:text-[#f0c060] hover:bg-[rgba(201,150,58,0.1)] transition-all">
-            <AnimatePresence mode="wait">
-              {mobileOpen
-                ? <motion.div key="x" initial={{ rotate: -90 }} animate={{ rotate: 0 }}><X className="w-4 h-4" /></motion.div>
-                : <motion.div key="m" initial={{ rotate: 90 }} animate={{ rotate: 0 }}><Menu className="w-4 h-4" /></motion.div>
-              }
-            </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Mobile bottom nav */}
+      <div className="lg:hidden fixed left-3 right-3 bottom-3 z-[9997] rounded-2xl overflow-hidden"
+        style={{
+          background: 'rgba(8,5,12,0.94)',
+          border: '1px solid rgba(201,150,58,0.24)',
+          backdropFilter: 'blur(22px)',
+          boxShadow: '0 18px 50px rgba(0,0,0,0.55)',
+          paddingBottom: 'env(safe-area-inset-bottom)'
+        }}>
+        <div className="grid grid-cols-5 gap-1 p-1.5">
+          {mobileTabs.map(item => {
+            const active = isActive(item.path);
+            return (
+              <Link key={item.path} to={createPageUrl(item.path)}
+                className={`flex min-h-[48px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold transition-all active:scale-95 ${
+                  active ? 'text-stone-950' : 'text-stone-400'
+                }`}
+                style={active ? {
+                  background: 'linear-gradient(135deg,#f0c060,#9b742c)',
+                  boxShadow: '0 0 16px rgba(201,150,58,0.45)'
+                } : {}}>
+                <item.icon className="w-4 h-4" />
+                <span className="leading-none">{label(item)}</span>
+              </Link>
+            );
+          })}
+          <button onClick={() => setMobileOpen(true)}
+            className={`flex min-h-[48px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold transition-all active:scale-95 ${
+              mobileOpen || anyMoreActive ? 'text-[#f0c060]' : 'text-stone-400'
+            }`}
+            style={mobileOpen || anyMoreActive ? { background: 'rgba(201,150,58,0.12)' } : {}}>
+            <MoreHorizontal className="w-4 h-4" />
+            <span className="leading-none">More</span>
           </button>
         </div>
       </div>
 
-      {/* Mobile drawer */}
+      {/* Mobile feature sheet */}
       <AnimatePresence>
         {mobileOpen && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="lg:hidden fixed inset-0 z-[9996] bg-black/70 backdrop-blur-sm"
+              onClick={() => setMobileOpen(false)} />
+
+            <motion.div
+              initial={{ y: '110%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '110%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 320 }}
+              className="lg:hidden fixed left-0 right-0 bottom-0 z-[9999] max-h-[82vh] overflow-y-auto rounded-t-3xl"
+              style={{
+                background: 'rgb(8,5,12)',
+                borderTop: '1px solid rgba(201,150,58,0.32)',
+                boxShadow: '0 -24px 80px rgba(0,0,0,0.85)',
+                paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))'
+              }}>
+              <div className="sticky top-0 z-10 border-b"
+                style={{ borderColor: 'rgba(201,150,58,0.2)', background: 'rgb(8,5,12)' }}>
+                <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-stone-700" />
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div>
+                    <p className="text-stone-100 text-sm font-black">Explore</p>
+                    <p className="text-stone-500 text-[10px] font-mono">{NAV_MORE_FLAT.length} tools and travel features</p>
+                  </div>
+                  <button onClick={() => setMobileOpen(false)}
+                    className="w-9 h-9 rounded-xl flex items-center justify-center text-stone-400 hover:text-white hover:bg-white/10 transition-all">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="px-4 py-4 space-y-5">
+                {NAV_MORE_GROUPS.map((group, gi) => (
+                  <div key={gi}>
+                    <p className="text-stone-500 text-[10px] font-mono uppercase tracking-widest mb-2 px-1">
+                      {groupLabel(group)}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {group.items.map(item => {
+                        const active = isActive(item.path);
+                        return (
+                          <Link key={item.path} to={createPageUrl(item.path)}
+                            onClick={() => setMobileOpen(false)}
+                            className={`flex items-center gap-2.5 min-h-[58px] px-3 py-2.5 rounded-2xl transition-all active:scale-95 ${
+                              active ? 'text-stone-950' : 'text-stone-300 hover:text-white'
+                            }`}
+                            style={active ? {
+                              background: 'linear-gradient(135deg,#f0c060,#9b742c)',
+                              boxShadow: '0 0 14px rgba(201,150,58,0.35)'
+                            } : {
+                              background: 'rgba(255,255,255,0.045)',
+                              border: '1px solid rgba(255,255,255,0.06)'
+                            }}>
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                              active ? 'bg-stone-900/30' : 'bg-white/5'
+                            }`}>
+                              <item.icon className="w-4 h-4" />
+                            </div>
+                            <span className="text-xs font-bold leading-tight flex-1">{label(item)}</span>
+                            {active && <ChevronRight className="w-4 h-4 opacity-60" />}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                <div className="border-t pt-3 space-y-2" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+                  {user && user.id && user.email ? (
+                    <>
+                      <Link to={createPageUrl('Profile')} onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-3 rounded-xl"
+                        style={{ background: 'rgba(201,150,58,0.08)', border: '1px solid rgba(201,150,58,0.2)' }}>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-stone-900 font-black"
+                          style={{ background: 'linear-gradient(135deg,#f0c060,#9b742c)' }}>
+                          {user.fullName?.[0]?.toUpperCase() || user.full_name?.[0]?.toUpperCase() || '?'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-stone-200 font-bold text-sm truncate">{user.fullName || user.full_name || 'Profile'}</p>
+                          <p className="text-stone-500 text-xs font-mono truncate">{user.email}</p>
+                        </div>
+                      </Link>
+                      <button onClick={() => { logout(); setMobileOpen(false); }}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border text-red-400 text-sm font-bold active:scale-95"
+                        style={{ borderColor: 'rgba(248,113,113,0.25)', background: 'rgba(248,113,113,0.06)' }}>
+                        <LogOut className="w-4 h-4" /> {t('logout')}
+                      </button>
+                    </>
+                  ) : (
+                    <button onClick={() => { setMobileOpen(false); db.auth.redirectToLogin(); }}
+                      className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-stone-950 text-sm font-black active:scale-95"
+                      style={{ background: 'linear-gradient(135deg,#f0c060,#9b742c)', boxShadow: '0 0 20px rgba(201,150,58,0.3)' }}>
+                      <Zap className="w-4 h-4" /> {t('login')}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile drawer */}
+      <AnimatePresence>
+        {false && mobileOpen && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="lg:hidden fixed inset-0 z-[9998] bg-black/70 backdrop-blur-sm"
