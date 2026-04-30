@@ -723,7 +723,6 @@ const integrations = {
         return 'This feature is currently using simplified responses. Please check back later for full AI functionality.';
       }
     },
-  },
   AI: {
     chat: async (messages, options = {}) => {
       try {
