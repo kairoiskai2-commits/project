@@ -123,6 +123,7 @@ export default function AskAI() {
       ).join('\n');
 
       const response = await db.integrations.Core.InvokeLLM({
+        provider: 'groq',
         prompt: `${bot.system}
 
 Conversation history:

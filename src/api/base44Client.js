@@ -6,6 +6,12 @@ const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabase
 
 const AUTH_SESSION_KEY = 'project-web-local-session'
 
+const hasUsableApiKey = (value) => {
+  if (!value || typeof value !== 'string') return false
+  const normalized = value.trim().toLowerCase()
+  return !normalized.includes('your_') && !normalized.includes('your-') && !normalized.endsWith('-here')
+}
+
 // Simple file-based database (in production, this would be a real database)
 let database = null
 
@@ -575,10 +581,54 @@ const integrations = {
       try {
         const prompt = params.prompt || params.text || 'Hello';
         let response = '';
+        let groqError = '';
 
-        // 1. Try Together AI with better model
+        // 1. Try Groq chat completions
+        const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
+        const GROQ_MODEL = import.meta.env.VITE_GROQ_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct';
+        if (hasUsableApiKey(GROQ_API_KEY) && !response) {
+          try {
+            const apiResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${GROQ_API_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: GROQ_MODEL,
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: params.max_tokens || 800,
+                temperature: params.temperature ?? 0.7,
+              }),
+            });
+
+            if (apiResponse.ok) {
+              const data = await apiResponse.json();
+              response = data.choices?.[0]?.message?.content || '';
+            } else {
+              const errorText = await apiResponse.text();
+              groqError = `Groq API failed (${apiResponse.status}): ${errorText}`;
+              console.warn('Groq LLM failed:', apiResponse.status, errorText);
+            }
+          } catch (error) {
+            groqError = error.message || String(error);
+            console.warn('Groq LLM failed:', error);
+          }
+        }
+
+        if (params.provider === 'groq' && !response) {
+          if (!hasUsableApiKey(GROQ_API_KEY)) {
+            return 'Groq is not configured yet. Add a real VITE_GROQ_API_KEY in your environment variables, then rebuild the app.';
+          }
+
+          return groqError
+            ? `Groq could not generate a reply. ${groqError}`
+            : 'Groq could not generate a reply. Please check VITE_GROQ_MODEL and your Groq API key.';
+        }
+
+        // 2. Try Together AI with better model
         const TOGETHER_API_KEY = import.meta.env.VITE_TOGETHER_API_KEY;
-        if (TOGETHER_API_KEY && !response) {
+        if (hasUsableApiKey(TOGETHER_API_KEY) && !response) {
           try {
             const apiResponse = await fetch('https://api.together.xyz/v1/chat/completions', {
               method: 'POST',
@@ -603,9 +653,9 @@ const integrations = {
           }
         }
 
-        // 2. Try Hugging Face with better model
+        // 3. Try Hugging Face with better model
         const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
-        if (HUGGINGFACE_API_KEY && !response) {
+        if (hasUsableApiKey(HUGGINGFACE_API_KEY) && !response) {
           try {
             const apiResponse = await fetch('https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium', {
               method: 'POST',
@@ -636,9 +686,9 @@ const integrations = {
           }
         }
 
-        // 3. Try Replicate with proper implementation
+        // 4. Try Replicate with proper implementation
         const REPLICATE_API_KEY = import.meta.env.VITE_REPLICATE_API_KEY;
-        if (REPLICATE_API_KEY && !response) {
+        if (hasUsableApiKey(REPLICATE_API_KEY) && !response) {
           try {
             const apiResponse = await fetch('https://api.replicate.com/v1/predictions', {
               method: 'POST',
@@ -673,9 +723,9 @@ const integrations = {
           }
         }
 
-        // 4. Try OpenAI-compatible API (if available)
+        // 5. Try OpenAI-compatible API (if available)
         const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
-        if (OPENAI_API_KEY && !response) {
+        if (hasUsableApiKey(OPENAI_API_KEY) && !response) {
           try {
             const apiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
               method: 'POST',
