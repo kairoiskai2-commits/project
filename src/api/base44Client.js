@@ -799,15 +799,15 @@ const integrations = {
               },
               body: JSON.stringify({
                 input: {
-                  prompt: prompt,
-                  max_length: params.max_tokens || 300,
-                  temperature: params.temperature || 0.7,
+                  prompt: userMessage,
+                  max_length: options.max_length || 300,
+                  temperature: options.temperature || 0.7,
                 },
               }),
             });
 
             if (apiResponse.ok) {
-              response = 'LLM response being generated via Replicate...';
+              aiResponse = 'LLM response being generated via Replicate...';
             }
           } catch (error) {
             console.warn('Replicate LLM failed:', error);
@@ -815,20 +815,21 @@ const integrations = {
         }
 
         // Fallback response
-        if (!response) {
-          if (prompt.toLowerCase().includes('egypt') || prompt.toLowerCase().includes('travel')) {
-            response = 'I can provide information about Egypt and travel planning. For specific questions about Egyptian history, places, or travel tips, I recommend checking Wikipedia or using our AI trip planner.';
+        if (!aiResponse) {
+          if (userMessage.toLowerCase().includes('egypt') || userMessage.toLowerCase().includes('travel')) {
+            aiResponse = 'I can provide information about Egypt and travel planning. For specific questions about Egyptian history, places, or travel tips, I recommend checking Wikipedia or using our AI trip planner.';
           } else {
-            response = 'This feature is currently using free AI services. For travel-related questions, I can help with information about destinations and planning.';
+            aiResponse = 'This feature is currently using free AI services. For travel-related questions, I can help with information about destinations and planning.';
           }
         }
 
-        return response || 'I apologize, but I am unable to generate a response at this time. Please try again later.';
+        return aiResponse || 'I apologize, but I am unable to generate a response at this time. Please try again later.';
       } catch (error) {
         console.error('LLM invocation failed:', error);
         return 'This feature is currently using simplified responses. Please check back later for full AI functionality.';
       }
     },
+  },
   },
   External: {
     wikipedia: async (action, params) => {
