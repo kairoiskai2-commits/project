@@ -33,12 +33,13 @@ const categoryMapping = {
   bazaar: 'cultural', library: 'cultural', mosque: 'religious',
 };
 
-export async function searchWikipedia(query, appendEgypt = false) {
+export async function searchWikipedia(query, appendEgypt = false, lang = 'en') {
   try {
-    const url = new URL('https://en.wikipedia.org/w/api.php');
+    const domain = `${lang}.wikipedia.org`;
+    const url = new URL(`https://${domain}/w/api.php`);
     url.searchParams.set('action', 'query');
     url.searchParams.set('list', 'search');
-    url.searchParams.set('srsearch', appendEgypt ? query + ' Egypt' : query);
+    url.searchParams.set('srsearch', appendEgypt ? `${query} Egypt` : query);
     url.searchParams.set('format', 'json');
     url.searchParams.set('origin', '*');
     url.searchParams.set('srlimit', '12');
@@ -52,9 +53,10 @@ export async function searchWikipedia(query, appendEgypt = false) {
   }
 }
 
-export async function getWikipediaPageDetails(title) {
+export async function getWikipediaPageDetails(title, lang = 'en') {
   try {
-    const url = new URL('https://en.wikipedia.org/w/api.php');
+    const domain = `${lang}.wikipedia.org`;
+    const url = new URL(`https://${domain}/w/api.php`);
     url.searchParams.set('action', 'query');
     url.searchParams.set('titles', title);
     url.searchParams.set('prop', 'extracts|coordinates|pageimages');
