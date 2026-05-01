@@ -90,7 +90,7 @@ function tx(key, lang) {
   return UI_TEXT[key]?.[lang] || UI_TEXT[key]?.['en'] || key;
 }
 
-export default function AIPopup() {
+export default function AIPopup({ pageMode = false }) {
   const { language } = useLanguage();
   const [open, setOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
@@ -100,14 +100,16 @@ export default function AIPopup() {
   const [addingPlace, setAddingPlace] = useState(null);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
+  const effectiveOpen = pageMode || open;
+  const actualMinimized = pageMode ? false : minimized;
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
   useEffect(() => {
-    if (open && !minimized) inputRef.current?.focus();
-  }, [open, minimized]);
+    if (effectiveOpen && !actualMinimized) inputRef.current?.focus();
+  }, [effectiveOpen, actualMinimized]);
 
   const handleSend = async (text) => {
     const msg = (text || input).trim();
@@ -194,7 +196,7 @@ ${wikiDetails.url ? `Source: ${wikiDetails.url}` : ''}`;
     <>
       {/* Floating Button */}
       <AnimatePresence>
-        {!open && (
+        {!pageMode && !open && (
           <motion.button
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -212,15 +214,15 @@ ${wikiDetails.url ? `Source: ${wikiDetails.url}` : ''}`;
 
       {/* Chat Window */}
       <AnimatePresence>
-        {open && (
+        {effectiveOpen && (
           <motion.div
             initial={{ opacity: 0, y: 16, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.96 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="fixed bottom-24 right-4 rtl:right-auto rtl:left-4 sm:bottom-6 sm:right-6 sm:rtl:left-6 z-50 w-[390px] max-w-[calc(100vw-2rem)]">
+            className={pageMode ? "relative w-full max-w-6xl mx-auto mt-10" : "fixed bottom-24 right-4 rtl:right-auto rtl:left-4 sm:bottom-6 sm:right-6 sm:rtl:left-6 z-50 w-[390px] max-w-[calc(100vw-2rem)]"}>
 
-            <div className={`rounded-3xl overflow-hidden transition-all duration-300 flex flex-col ${minimized ? 'h-[58px]' : 'h-[560px] sm:h-[580px] max-h-[calc(100vh-7rem)]'}`}
+            <div className={`rounded-3xl overflow-hidden transition-all duration-300 flex flex-col ${actualMinimized ? 'h-[58px]' : pageMode ? 'min-h-[calc(100vh-7rem)]' : 'h-[560px] sm:h-[580px] max-h-[calc(100vh-7rem)]'}`}
               style={{ background: 'linear-gradient(180deg, rgba(12,14,24,0.98), rgba(6,7,13,0.98))', border: '1px solid rgba(240,192,96,0.28)', backdropFilter: 'blur(24px)', boxShadow: '0 24px 80px rgba(0,0,0,0.75), 0 0 34px rgba(201,150,58,0.16)' }}>
 
               {/* Header */}
@@ -232,17 +234,21 @@ ${wikiDetails.url ? `Source: ${wikiDetails.url}` : ''}`;
                   <p className="font-black text-stone-100 text-sm leading-none">{tx('title', language)}</p>
                   <p className="text-emerald-300 text-[10px] font-mono mt-1">{tx('online', language)} · web guide</p>
                 </div>
-                <button onClick={() => setMinimized(!minimized)}
-                  className="p-1.5 text-stone-400 hover:text-stone-100 rounded-lg hover:bg-white/10 transition-all">
-                  {minimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
-                </button>
-                <button onClick={() => setOpen(false)}
-                  className="p-1.5 text-stone-400 hover:text-red-300 rounded-lg hover:bg-white/10 transition-all">
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                {!pageMode && (
+                  <button onClick={() => setMinimized(!minimized)}
+                    className="p-1.5 text-stone-400 hover:text-stone-100 rounded-lg hover:bg-white/10 transition-all">
+                    {minimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
+                  </button>
+                )}
+                {!pageMode && (
+                  <button onClick={() => setOpen(false)}
+                    className="p-1.5 text-stone-400 hover:text-red-300 rounded-lg hover:bg-white/10 transition-all">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
 
-              {!minimized && (
+              {!actualMinimized && (
                 <>
                   {/* Messages */}
                   <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
