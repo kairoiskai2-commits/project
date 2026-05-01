@@ -82,6 +82,7 @@ export default function Header() {
   const megaRef = useRef(null);
   const langRef = useRef(null);
   const [langOpen, setLangOpen] = useState(false);
+  const mobileRef = useRef(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -94,6 +95,7 @@ export default function Header() {
     const handler = (e) => {
       if (megaRef.current && !megaRef.current.contains(e.target)) setMegaOpen(false);
       if (langRef.current && !langRef.current.contains(e.target)) setLangOpen(false);
+      if (mobileRef.current && !mobileRef.current.contains(e.target)) setMobileOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -265,10 +267,142 @@ export default function Header() {
         </nav>
 
       {/* Mobile hamburger */}
-      <button onClick={() => setMobileOpen(true)}
-        className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-stone-400 hover:text-[#c9963a] hover:bg-[rgba(201,150,58,0.1)] transition-all ml-2">
-        <Menu className="w-4 h-4" />
-      </button>
+      <div className="relative">
+        <button onClick={() => setMobileOpen(v => !v)}
+          className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-stone-400 hover:text-[#c9963a] hover:bg-[rgba(201,150,58,0.1)] transition-all ml-2">
+          <Menu className="w-4 h-4" />
+        </button>
+
+        <AnimatePresence>
+          {mobileOpen && (
+            <motion.div
+              ref={mobileRef}
+              initial={{ opacity: 0, y: -6, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.96 }}
+              transition={{ duration: 0.15 }}
+              className="absolute top-full mt-2 z-[9999] right-0"
+              style={{ width: '280px', maxWidth: 'calc(100vw - 2rem)' }}>
+              <div className="rounded-xl overflow-hidden"
+                style={{ background: 'rgba(8,5,2,0.98)', border: '1px solid rgba(201,150,58,0.25)', backdropFilter: 'blur(20px)', boxShadow: '0 16px 40px rgba(0,0,0,0.8)' }}>
+
+                {/* Header */}
+                <div className="p-4 border-b border-stone-700 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <motion.div whileHover={{ scale: 1.05 }} transition={{ type: 'spring', stiffness: 400 }}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-base relative overflow-hidden"
+                      style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 14px rgba(201,150,58,0.6)' }}>
+                      𓂀
+                    </motion.div>
+                    <div>
+                      <p className="font-bold text-white text-sm">{language === 'ar' ? 'عجائب مصر' : 'Egypt Wonders'}</p>
+                      <p className="text-xs text-stone-400">{language === 'ar' ? 'القائمة الرئيسية' : 'Main Menu'}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setMobileOpen(false)} className="text-stone-400 hover:text-white transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* User Info */}
+                {user && user.id && user.email && (
+                  <div className="p-4 border-b border-stone-700">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-sm font-black"
+                        style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 8px rgba(201,150,58,0.5)' }}>
+                        {user.fullName?.[0]?.toUpperCase() || user.full_name?.[0]?.toUpperCase() || '?'}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{user.fullName || user.full_name || 'User'}</p>
+                        <p className="text-xs text-stone-400">{user.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Navigation */}
+                <div className="max-h-96 overflow-y-auto p-4 space-y-6">
+
+                  {/* Primary Navigation */}
+                  <div>
+                    <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3 px-2">
+                      {language === 'ar' ? 'الرئيسي' : 'Primary'}
+                    </p>
+                    <div className="space-y-1">
+                      {NAV_PRIMARY.map(item => {
+                        const active = isActive(item.path);
+                        return (
+                          <Link key={item.path} to={createPageUrl(item.path)}
+                            onClick={() => setMobileOpen(false)}
+                            className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
+                              active ? 'bg-amber-500 text-stone-900 shadow-lg' : 'text-stone-300 hover:text-white hover:bg-stone-800'
+                            }`}>
+                            <item.icon className="w-5 h-5 shrink-0" />
+                            <span>{label(item)}</span>
+                            {active && <ChevronRight className="w-4 h-4 mr-auto" />}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Feature Groups */}
+                  {NAV_MORE_GROUPS.map((group, gi) => {
+                    const COLS = [
+                      { header: '#f0c060', bg: 'rgba(201,150,58,0.07)', border: 'rgba(201,150,58,0.2)' },
+                      { header: '#fb923c', bg: 'rgba(249,115,22,0.07)', border: 'rgba(249,115,22,0.2)' },
+                      { header: '#c084fc', bg: 'rgba(168,85,247,0.07)', border: 'rgba(168,85,247,0.2)' },
+                      { header: '#67e8f9', bg: 'rgba(34,211,238,0.07)', border: 'rgba(34,211,238,0.2)' },
+                    ][gi];
+                    return (
+                      <div key={gi}>
+                        <p className="text-xs font-bold uppercase tracking-wider mb-3 px-2" style={{ color: COLS.header }}>
+                          {groupLabel(group)}
+                        </p>
+                        <div className="space-y-1">
+                          {group.items.map(item => {
+                            const active = isActive(item.path);
+                            return (
+                              <Link key={item.path} to={createPageUrl(item.path)}
+                                onClick={() => setMobileOpen(false)}
+                                className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
+                                  active ? 'text-stone-900 shadow-lg' : 'text-stone-300 hover:text-white hover:bg-stone-800'
+                                }`}
+                                style={active ? { background: `linear-gradient(135deg,${COLS.header},#7a5c20)` } : {}}>
+                                <item.icon className="w-5 h-5 shrink-0" />
+                                <span>{label(item)}</span>
+                                {active && <ChevronRight className="w-4 h-4 mr-auto" />}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Footer */}
+                <div className="p-4 border-t border-stone-700">
+                  {!user || !user.id || !user.email ? (
+                    <button onClick={() => { db.auth.redirectToLogin(); setMobileOpen(false); }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-stone-900 text-sm font-bold"
+                      style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 12px rgba(201,150,58,0.4)' }}>
+                      <Zap className="w-4 h-4" /> {t('login')}
+                    </button>
+                  ) : user.role === 'admin' && (
+                    <Link to={createPageUrl('Admin')}
+                      onClick={() => setMobileOpen(false)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-stone-900 text-sm font-bold"
+                      style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 12px rgba(201,150,58,0.4)' }}>
+                      <Shield className="w-4 h-4" /> Admin
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
           {/* Theme */}
           <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -341,139 +475,6 @@ export default function Header() {
           )}
 
         </div>
-
-      {/* Mobile sidebar */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="lg:hidden fixed inset-0 z-[9996] bg-black/70 backdrop-blur-sm"
-              onClick={() => setMobileOpen(false)} />
-
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-              className="lg:hidden fixed top-0 right-0 h-full w-80 max-w-[calc(100vw-2rem)] z-[9999] bg-stone-900 border-l border-stone-700 flex flex-col"
-              style={{ backdropFilter: 'blur(24px)', boxShadow: '0 0 40px rgba(0,0,0,0.8)' }}>
-
-              {/* Sidebar Header */}
-              <div className="p-5 border-b border-stone-800 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <motion.div whileHover={{ scale: 1.05 }} transition={{ type: 'spring', stiffness: 400 }}
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-base relative overflow-hidden"
-                    style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 14px rgba(201,150,58,0.6)' }}>
-                    𓂀
-                  </motion.div>
-                  <div>
-                    <p className="font-bold text-white text-sm">{language === 'ar' ? 'عجائب مصر' : 'Egypt Wonders'}</p>
-                    <p className="text-xs text-stone-400">{language === 'ar' ? 'القائمة الرئيسية' : 'Main Menu'}</p>
-                  </div>
-                </div>
-                <button onClick={() => setMobileOpen(false)} className="text-stone-400 hover:text-white transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* User Info */}
-              {user && user.id && user.email && (
-                <div className="p-4 border-b border-stone-800">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-sm font-black"
-                      style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 8px rgba(201,150,58,0.5)' }}>
-                      {user.fullName?.[0]?.toUpperCase() || user.full_name?.[0]?.toUpperCase() || '?'}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{user.fullName || user.full_name || 'User'}</p>
-                      <p className="text-xs text-stone-400">{user.email}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Navigation */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-6">
-
-                {/* Primary Navigation */}
-                <div>
-                  <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3 px-2">
-                    {language === 'ar' ? 'الرئيسي' : 'Primary'}
-                  </p>
-                  <div className="space-y-1">
-                    {NAV_PRIMARY.map(item => {
-                      const active = isActive(item.path);
-                      return (
-                        <Link key={item.path} to={createPageUrl(item.path)}
-                          onClick={() => setMobileOpen(false)}
-                          className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
-                            active ? 'bg-amber-500 text-stone-900 shadow-lg' : 'text-stone-300 hover:text-white hover:bg-stone-800'
-                          }`}>
-                          <item.icon className="w-5 h-5 shrink-0" />
-                          <span>{label(item)}</span>
-                          {active && <ChevronRight className="w-4 h-4 mr-auto" />}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Feature Groups */}
-                {NAV_MORE_GROUPS.map((group, gi) => {
-                  const COLS = [
-                    { header: '#f0c060', bg: 'rgba(201,150,58,0.07)', border: 'rgba(201,150,58,0.2)' },
-                    { header: '#fb923c', bg: 'rgba(249,115,22,0.07)', border: 'rgba(249,115,22,0.2)' },
-                    { header: '#c084fc', bg: 'rgba(168,85,247,0.07)', border: 'rgba(168,85,247,0.2)' },
-                    { header: '#67e8f9', bg: 'rgba(34,211,238,0.07)', border: 'rgba(34,211,238,0.2)' },
-                  ][gi];
-                  return (
-                    <div key={gi}>
-                      <p className="text-xs font-bold uppercase tracking-wider mb-3 px-2" style={{ color: COLS.header }}>
-                        {groupLabel(group)}
-                      </p>
-                      <div className="space-y-1">
-                        {group.items.map(item => {
-                          const active = isActive(item.path);
-                          return (
-                            <Link key={item.path} to={createPageUrl(item.path)}
-                              onClick={() => setMobileOpen(false)}
-                              className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
-                                active ? 'text-stone-900 shadow-lg' : 'text-stone-300 hover:text-white hover:bg-stone-800'
-                              }`}
-                              style={active ? { background: `linear-gradient(135deg,${COLS.header},#7a5c20)` } : {}}>
-                              <item.icon className="w-5 h-5 shrink-0" />
-                              <span>{label(item)}</span>
-                              {active && <ChevronRight className="w-4 h-4 mr-auto" />}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Footer */}
-              <div className="p-4 border-t border-stone-800">
-                {!user || !user.id || !user.email ? (
-                  <button onClick={() => { db.auth.redirectToLogin(); setMobileOpen(false); }}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-stone-900 text-sm font-bold"
-                    style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 12px rgba(201,150,58,0.4)' }}>
-                    <Zap className="w-4 h-4" /> {t('login')}
-                  </button>
-                ) : user.role === 'admin' && (
-                  <Link to={createPageUrl('Admin')}
-                    onClick={() => setMobileOpen(false)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-stone-900 text-sm font-bold"
-                    style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 12px rgba(201,150,58,0.4)' }}>
-                    <Shield className="w-4 h-4" /> Admin
-                  </Link>
-                )}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
 
     </header>
   );
