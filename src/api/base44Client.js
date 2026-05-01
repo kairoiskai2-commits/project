@@ -582,70 +582,77 @@ const integrations = {
         const prompt = params.prompt || params.text || 'Hello';
         let response = '';
 
-        // Web search using free APIs
+        // Web search using free APIs (no keys needed)
         if (params.provider === 'web' && !response) {
           try {
             const query = params.query || prompt;
-            const SEARCH_API_KEY = import.meta.env.VITE_SEARCH_API_KEY;
             
-            // Try SerpAPI (free tier available)
-            if (SEARCH_API_KEY) {
-              try {
-                const serpResponse = await fetch(
-                  `https://serpapi.com/search?q=${encodeURIComponent(query)}&api_key=${SEARCH_API_KEY}&num=5`,
-                  { method: 'GET' }
-                );
+            // Use DuckDuckGo instant answer API (free, no key needed)
+            try {
+              const ddgResponse = await fetch(
+                `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json`,
+                { method: 'GET' }
+              );
+              
+              if (ddgResponse.ok) {
+                const data = await ddgResponse.json();
+                const answer = data.Answer || data.AbstractText || '';
+                const relatedTopics = data.RelatedTopics || [];
                 
-                if (serpResponse.ok) {
-                  const data = await serpResponse.json();
-                  const results = data.organic_results || [];
-                  const snippets = results.map((r, i) => 
-                    `${i + 1}. ${r.title}\n${r.snippet}`
-                  ).join('\n\n');
-                  
-                  response = `Based on web search results for "${query}":\n\n${snippets}\n\nProcessing with AI...`;
+                if (answer) {
+                  response = answer;
+                } else if (relatedTopics.length > 0) {
+                  const topics = relatedTopics
+                    .filter(t => t.Text)
+                    .slice(0, 3)
+                    .map(t => `• ${t.Text}`)
+                    .join('\n');
+                  response = `Found related information:\n${topics}`;
                 }
-              } catch (err) {
-                console.warn('SerpAPI search failed:', err);
               }
+            } catch (err) {
+              console.warn('DuckDuckGo search failed:', err);
             }
             
-            // Fallback: Use DuckDuckGo instant answer API (free, no key needed)
+            // If DuckDuckGo doesn't have an answer, try Jina API for web content (free)
             if (!response) {
               try {
-                const ddgResponse = await fetch(
-                  `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json`,
-                  { method: 'GET' }
+                const jinaResponse = await fetch(
+                  `https://api.jina.ai/search?q=${encodeURIComponent(query)}`,
+                  { 
+                    method: 'GET',
+                    headers: {
+                      'Accept': 'application/json'
+                    }
+                  }
                 );
                 
-                if (ddgResponse.ok) {
-                  const data = await ddgResponse.json();
-                  const answer = data.Answer || data.AbstractText || '';
-                  const relatedTopics = data.RelatedTopics || [];
-                  
-                  if (answer) {
-                    response = answer;
-                  } else if (relatedTopics.length > 0) {
-                    const topics = relatedTopics
-                      .filter(t => t.Text)
+                if (jinaResponse.ok) {
+                  const data = await jinaResponse.json();
+                  if (data.data && data.data.length > 0) {
+                    const results = data.data
                       .slice(0, 3)
-                      .map(t => `• ${t.Text}`)
-                      .join('\n');
-                    response = `Found related information:\n${topics}`;
+                      .map((r, i) => `${i + 1}. ${r.title || r.url}\n${r.snippet || r.description || ''}`)
+                      .join('\n\n');
+                    response = `Search results for "${query}":\n\n${results}`;
                   }
                 }
               } catch (err) {
-                console.warn('DuckDuckGo search failed:', err);
+                console.warn('Jina search failed:', err);
               }
             }
             
-            // If still no response, provide guidance
+            // If still no response, provide helpful guidance
             if (!response) {
-              response = `To search the web for answers, you can add VITE_SEARCH_API_KEY (SerpAPI) to your .env.local file for better results. Currently using free DuckDuckGo API which has limited results. For "${query}", please try asking more specific questions about Egyptian destinations, travel planning, or practical advice.`;
+              response = `I searched for "${query}" but couldn't find direct answers. Try asking more specific questions about:
+• Egyptian destinations and landmarks
+• Travel planning and itineraries
+• Practical travel information
+• Historical sites and museums`;
             }
           } catch (error) {
             console.warn('Web search error:', error);
-            response = `Web search encountered an error: ${error.message}. Please try rephrasing your question.`;
+            response = `Web search encountered an error. Please try rephrasing your question.`;
           }
         }
 
