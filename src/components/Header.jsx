@@ -332,16 +332,9 @@ export default function Header() {
                 <span className="text-xs font-bold text-stone-400 max-w-[60px] truncate">{user.fullName?.split(' ')[0] || user.full_name?.split(' ')[0] || 'Me'}</span>
               </Link>
             </div>
-          ) : (
-            <button onClick={() => db.auth.redirectToLogin()}
-              className="flex items-center gap-1 px-3 py-2 rounded-xl text-stone-900 text-xs font-black"
-              style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 12px rgba(201,150,58,0.4)' }}>
-              <Zap className="w-3.5 h-3.5" /> {t('login')}
-            </button>
           )}
 
         </div>
-      </div>
 
       {/* Mobile sidebar */}
       <AnimatePresence>
