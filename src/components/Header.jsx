@@ -11,7 +11,7 @@ import {
   Search, LogOut, ChevronDown, UserCircle, Shield, Heart,
   Calendar, DollarSign, Users, Zap, Bot,
   Trophy, Navigation, Brain, Luggage, BarChart2, Cloud, Code2, Ticket,
-  Rss, Feather, Box, BookOpen, Camera, ChevronRight, MoreHorizontal
+  Rss, Feather, Box, BookOpen, Camera, ChevronRight, Menu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -112,12 +112,6 @@ export default function Header() {
   const groupLabel = (g) => language === 'ar' ? g.label_ar : g.label_en;
 
   const anyMoreActive = NAV_MORE_FLAT.some(i => isActive(i.path));
-  const mobileTabs = [
-    NAV_PRIMARY.find(item => item.path === 'Home'),
-    NAV_PRIMARY.find(item => item.path === 'Explore'),
-    NAV_PRIMARY.find(item => item.path === 'AskAI'),
-    NAV_PRIMARY.find(item => item.path === 'Search'),
-  ].filter(Boolean);
 
   return (
     <header
@@ -270,8 +264,11 @@ export default function Header() {
           </div>
         </nav>
 
-        {/* Right controls */}
-        <div className="flex items-center gap-1 ml-auto">
+      {/* Mobile hamburger */}
+      <button onClick={() => setMobileOpen(true)}
+        className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-stone-400 hover:text-[#c9963a] hover:bg-[rgba(201,150,58,0.1)] transition-all ml-2">
+        <Menu className="w-4 h-4" />
+      </button>
 
           {/* Theme */}
           <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -346,44 +343,7 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile bottom nav */}
-      <div className="lg:hidden fixed left-3 right-3 bottom-3 z-[9997] rounded-2xl overflow-hidden"
-        style={{
-          background: 'rgba(8,5,12,0.94)',
-          border: '1px solid rgba(201,150,58,0.24)',
-          backdropFilter: 'blur(22px)',
-          boxShadow: '0 18px 50px rgba(0,0,0,0.55)',
-          paddingBottom: 'env(safe-area-inset-bottom)'
-        }}>
-        <div className="grid grid-cols-5 gap-1 p-1.5">
-          {mobileTabs.map(item => {
-            const active = isActive(item.path);
-            return (
-              <Link key={item.path} to={createPageUrl(item.path)}
-                className={`flex min-h-[48px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold transition-all active:scale-95 ${
-                  active ? 'text-stone-950' : 'text-stone-400'
-                }`}
-                style={active ? {
-                  background: 'linear-gradient(135deg,#f0c060,#9b742c)',
-                  boxShadow: '0 0 16px rgba(201,150,58,0.45)'
-                } : {}}>
-                <item.icon className="w-4 h-4" />
-                <span className="leading-none">{label(item)}</span>
-              </Link>
-            );
-          })}
-          <button onClick={() => setMobileOpen(true)}
-            className={`flex min-h-[48px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold transition-all active:scale-95 ${
-              mobileOpen || anyMoreActive ? 'text-[#f0c060]' : 'text-stone-400'
-            }`}
-            style={mobileOpen || anyMoreActive ? { background: 'rgba(201,150,58,0.12)' } : {}}>
-            <MoreHorizontal className="w-4 h-4" />
-            <span className="leading-none">More</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile feature sheet */}
+      {/* Mobile sidebar */}
       <AnimatePresence>
         {mobileOpen && (
           <>
@@ -392,12 +352,129 @@ export default function Header() {
               onClick={() => setMobileOpen(false)} />
 
             <motion.div
-              initial={{ y: '110%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '110%' }}
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-              className="lg:hidden fixed left-0 right-0 bottom-0 z-[9999] max-h-[calc(100vh-4rem)] overflow-y-auto rounded-t-3xl"
-              style={{
+              className="lg:hidden fixed top-0 right-0 h-full w-80 max-w-[calc(100vw-2rem)] z-[9999] bg-stone-900 border-l border-stone-700 flex flex-col"
+              style={{ backdropFilter: 'blur(24px)', boxShadow: '0 0 40px rgba(0,0,0,0.8)' }}>
+
+              {/* Sidebar Header */}
+              <div className="p-5 border-b border-stone-800 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <motion.div whileHover={{ scale: 1.05 }} transition={{ type: 'spring', stiffness: 400 }}
+                    className="w-9 h-9 rounded-xl flex items-center justify-center text-base relative overflow-hidden"
+                    style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 14px rgba(201,150,58,0.6)' }}>
+                    𓂀
+                  </motion.div>
+                  <div>
+                    <p className="font-bold text-white text-sm">{language === 'ar' ? 'عجائب مصر' : 'Egypt Wonders'}</p>
+                    <p className="text-xs text-stone-400">{language === 'ar' ? 'القائمة الرئيسية' : 'Main Menu'}</p>
+                  </div>
+                </div>
+                <button onClick={() => setMobileOpen(false)} className="text-stone-400 hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* User Info */}
+              {user && user.id && user.email && (
+                <div className="p-4 border-b border-stone-800">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-sm font-black"
+                      style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 8px rgba(201,150,58,0.5)' }}>
+                      {user.fullName?.[0]?.toUpperCase() || user.full_name?.[0]?.toUpperCase() || '?'}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-white truncate">{user.fullName || user.full_name || 'User'}</p>
+                      <p className="text-xs text-stone-400">{user.email}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Navigation */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-6">
+
+                {/* Primary Navigation */}
+                <div>
+                  <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3 px-2">
+                    {language === 'ar' ? 'الرئيسي' : 'Primary'}
+                  </p>
+                  <div className="space-y-1">
+                    {NAV_PRIMARY.map(item => {
+                      const active = isActive(item.path);
+                      return (
+                        <Link key={item.path} to={createPageUrl(item.path)}
+                          onClick={() => setMobileOpen(false)}
+                          className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
+                            active ? 'bg-amber-500 text-stone-900 shadow-lg' : 'text-stone-300 hover:text-white hover:bg-stone-800'
+                          }`}>
+                          <item.icon className="w-5 h-5 shrink-0" />
+                          <span>{label(item)}</span>
+                          {active && <ChevronRight className="w-4 h-4 mr-auto" />}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Feature Groups */}
+                {NAV_MORE_GROUPS.map((group, gi) => {
+                  const COLS = [
+                    { header: '#f0c060', bg: 'rgba(201,150,58,0.07)', border: 'rgba(201,150,58,0.2)' },
+                    { header: '#fb923c', bg: 'rgba(249,115,22,0.07)', border: 'rgba(249,115,22,0.2)' },
+                    { header: '#c084fc', bg: 'rgba(168,85,247,0.07)', border: 'rgba(168,85,247,0.2)' },
+                    { header: '#67e8f9', bg: 'rgba(34,211,238,0.07)', border: 'rgba(34,211,238,0.2)' },
+                  ][gi];
+                  return (
+                    <div key={gi}>
+                      <p className="text-xs font-bold uppercase tracking-wider mb-3 px-2" style={{ color: COLS.header }}>
+                        {groupLabel(group)}
+                      </p>
+                      <div className="space-y-1">
+                        {group.items.map(item => {
+                          const active = isActive(item.path);
+                          return (
+                            <Link key={item.path} to={createPageUrl(item.path)}
+                              onClick={() => setMobileOpen(false)}
+                              className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
+                                active ? 'text-stone-900 shadow-lg' : 'text-stone-300 hover:text-white hover:bg-stone-800'
+                              }`}
+                              style={active ? { background: `linear-gradient(135deg,${COLS.header},#7a5c20)` } : {}}>
+                              <item.icon className="w-5 h-5 shrink-0" />
+                              <span>{label(item)}</span>
+                              {active && <ChevronRight className="w-4 h-4 mr-auto" />}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-stone-800">
+                {!user || !user.id || !user.email ? (
+                  <button onClick={() => { db.auth.redirectToLogin(); setMobileOpen(false); }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-stone-900 text-sm font-bold"
+                    style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 12px rgba(201,150,58,0.4)' }}>
+                    <Zap className="w-4 h-4" /> {t('login')}
+                  </button>
+                ) : user.role === 'admin' && (
+                  <Link to={createPageUrl('Admin')}
+                    onClick={() => setMobileOpen(false)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-stone-900 text-sm font-bold"
+                    style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 12px rgba(201,150,58,0.4)' }}>
+                    <Shield className="w-4 h-4" /> Admin
+                  </Link>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
                 background: 'rgb(8,5,12)',
                 borderTop: '1px solid rgba(201,150,58,0.32)',
                 boxShadow: '0 -24px 80px rgba(0,0,0,0.85)',
@@ -522,169 +599,6 @@ export default function Header() {
         )}
       </AnimatePresence>
 
-      {/* Mobile drawer */}
-      <AnimatePresence>
-        {false && mobileOpen && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="lg:hidden fixed inset-0 z-[9998] bg-black/70 backdrop-blur-sm"
-              onClick={() => setMobileOpen(false)} />
-
-            <motion.div
-              initial={{ x: isRTL ? '-100%' : '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: isRTL ? '-100%' : '100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-              className="lg:hidden fixed top-0 bottom-0 z-[9999] w-[88vw] max-w-[340px] overflow-y-auto"
-              style={{
-                [isRTL ? 'left' : 'right']: 0,
-                background: 'rgb(8,5,12)',
-                borderLeft: isRTL ? 'none' : '1px solid rgba(201,150,58,0.3)',
-                borderRight: isRTL ? '1px solid rgba(201,150,58,0.3)' : 'none',
-              }}>
-
-              {/* Drawer header */}
-              <div className="flex items-center justify-between px-4 py-4 border-b sticky top-0 z-10"
-                style={{ borderColor: 'rgba(201,150,58,0.2)', background: 'rgb(8,5,12)' }}>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center text-sm"
-                    style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)' }}>𓂀</div>
-                  <span className="font-black text-sm gold-shimmer">{language === 'ar' ? 'عجائب مصر' : 'Egypt Wonders'}</span>
-                </div>
-                <button onClick={() => setMobileOpen(false)}
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-stone-400 hover:text-white hover:bg-white/10 transition-all">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Primary nav */}
-              <div className="px-3 pt-3">
-                <p className="text-stone-600 text-[9px] font-mono uppercase tracking-widest mb-2 px-3">
-                  {language === 'ar' ? 'الرئيسي' : 'Main'}
-                </p>
-                <div className="grid grid-cols-3 gap-2 mb-4">
-                  {NAV_PRIMARY.map(item => {
-                    const active = isActive(item.path);
-                    return (
-                      <Link key={item.path} to={createPageUrl(item.path)}
-                        onClick={() => setMobileOpen(false)}
-                        className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl transition-all active:scale-95 text-center ${
-                          active ? 'text-stone-900' : 'text-stone-400'
-                        }`}
-                        style={active ? { background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 14px rgba(201,150,58,0.4)' } : { background: 'rgba(255,255,255,0.04)' }}>
-                        <item.icon className="w-5 h-5" />
-                        <span className="text-[10px] font-bold">{label(item)}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Grouped nav */}
-              <div className="px-3 pb-3 space-y-4">
-                {NAV_MORE_GROUPS.map((group, gi) => (
-                  <div key={gi}>
-                    <p className="text-stone-600 text-[9px] font-mono uppercase tracking-widest mb-2 px-1">
-                      {groupLabel(group)}
-                    </p>
-                    <div className="space-y-1">
-                      {group.items.map(item => {
-                        const active = isActive(item.path);
-                        return (
-                          <Link key={item.path} to={createPageUrl(item.path)}
-                            onClick={() => setMobileOpen(false)}
-                            className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all active:scale-95 ${
-                              active ? 'text-stone-900' : 'text-stone-300 hover:text-white'
-                            }`}
-                            style={active ? { background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 10px rgba(201,150,58,0.35)' } : { background: 'rgba(255,255,255,0.03)' }}>
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                              active ? 'bg-stone-900/30' : 'bg-white/5'
-                            }`}>
-                              <item.icon className="w-4 h-4" />
-                            </div>
-                            <span className="text-sm font-semibold flex-1">{label(item)}</span>
-                            {active && <ChevronRight className="w-4 h-4 opacity-60" />}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-
-                {user?.role === 'admin' && (
-                  <Link to={createPageUrl('Admin')} onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-3 px-3 py-3 rounded-xl text-stone-900 active:scale-95"
-                    style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)' }}>
-                    <div className="w-8 h-8 rounded-lg bg-stone-900/30 flex items-center justify-center">
-                      <Shield className="w-4 h-4" />
-                    </div>
-                    <span className="text-sm font-black flex-1">Admin Panel</span>
-                  </Link>
-                )}
-              </div>
-
-              {/* Auth section */}
-              <div className="px-3 pb-8 pt-2 border-t mt-2 space-y-2" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-                {/* Language selector in drawer */}
-                <div className="grid grid-cols-3 gap-1.5 mb-3">
-                  {LANGUAGES.slice(0, 6).map(lang => (
-                    <button key={lang.code} onClick={() => setLanguage(lang.code)}
-                      className={`flex items-center gap-1.5 px-2 py-2 rounded-lg text-[10px] font-bold transition-all ${
-                        language === lang.code ? 'text-[#f0c060]' : 'text-stone-500 hover:text-stone-300'
-                      }`}
-                      style={language === lang.code ? { background: 'rgba(201,150,58,0.12)', border: '1px solid rgba(201,150,58,0.25)' } : { background: 'rgba(255,255,255,0.03)' }}>
-                      <span>{lang.flag}</span><span>{lang.name}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {user && user.id && user.email ? (
-                  <>
-                    <div className="flex items-center gap-3 px-3 py-3 rounded-xl"
-                      style={{ background: 'rgba(201,150,58,0.08)', border: '1px solid rgba(201,150,58,0.2)' }}>
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-stone-900 font-black"
-                        style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)' }}>
-                        {user.fullName?.[0]?.toUpperCase() || user.full_name?.[0]?.toUpperCase() || '?'}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-stone-200 font-bold text-sm truncate">{user.fullName || user.full_name}</p>
-                        <p className="text-stone-500 text-xs font-mono truncate">{user.email}</p>
-                      </div>
-                    </div>
-                    {user.role === 'admin' && (
-                      <Link to={createPageUrl('Admin')} onClick={() => setMobileOpen(false)}
-                        className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-stone-900 text-sm font-black"
-                        style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 12px rgba(201,150,58,0.3)' }}>
-                        <Shield className="w-4 h-4" /> Admin Panel
-                      </Link>
-                    )}
-                    <button onClick={() => { logout(); setMobileOpen(false); }}
-                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border text-red-400 text-sm font-bold active:scale-95"
-                      style={{ borderColor: 'rgba(248,113,113,0.25)', background: 'rgba(248,113,113,0.06)' }}>
-                      <LogOut className="w-4 h-4" /> {t('logout')}
-                    </button>
-                    <button onClick={async () => {
-                      // Reset all data
-                      await db.auth.reset();
-                      window.location.reload();
-                    }}
-                      className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border text-orange-400 text-xs font-bold active:scale-95"
-                      style={{ borderColor: 'rgba(251,146,60,0.25)', background: 'rgba(251,146,60,0.06)' }}>
-                      🔄 Reset Data
-                    </button>
-                  </>
-                ) : (
-                  <button onClick={() => db.auth.redirectToLogin()}
-                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-stone-900 text-sm font-black active:scale-95"
-                    style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 20px rgba(201,150,58,0.3)' }}>
-                    <Zap className="w-4 h-4" /> {t('login')}
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </header>
   );
 }
