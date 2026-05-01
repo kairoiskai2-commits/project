@@ -123,7 +123,7 @@ export default function AskAI() {
       ).join('\n');
 
       const response = await db.integrations.Core.InvokeLLM({
-        provider: 'web',
+        provider: 'web', // Use Google/web search answer endpoint instead of Groq chat completions
         query: msg,
         prompt: `${bot.system}
 
@@ -132,8 +132,8 @@ ${history}
 
 User: ${msg}
 
-Respond in ${langName}. Be helpful, detailed, and engaging. ${activeBot === 'guide' ? 'When mentioning specific Egyptian places, wrap their English names in [brackets] like [Valley of the Kings].' : ''}`,
-        add_context_from_internet: activeBot === 'planner',
+Respond in ${langName}. Be helpful, detailed, and engaging. Based on web search results and your knowledge. ${activeBot === 'guide' ? 'When mentioning specific Egyptian places, wrap their English names in [brackets] like [Valley of the Kings].' : ''}`,
+        useWebSearch: true,
         max_tokens: 800,
         temperature: 0.7
       });

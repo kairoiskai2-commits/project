@@ -581,53 +581,72 @@ const integrations = {
       try {
         const prompt = params.prompt || params.text || 'Hello';
         let response = '';
-        let webSearchError = '';
-        let groqError = '';
 
+        // Web search using free APIs
         if (params.provider === 'web' && !response) {
           try {
-            const webSearchBody = JSON.stringify({
-              query: params.query || prompt,
-              prompt,
-              max_results: params.max_results || 6,
-            });
-
-            let apiResponse = await fetch('/api/search-answer', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: webSearchBody,
-            });
-
-            if (apiResponse.status === 404 || apiResponse.status === 405) {
-              apiResponse = await fetch('/api/search-answer/', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: webSearchBody,
-              });
+            const query = params.query || prompt;
+            const SEARCH_API_KEY = import.meta.env.VITE_SEARCH_API_KEY;
+            
+            // Try SerpAPI (free tier available)
+            if (SEARCH_API_KEY) {
+              try {
+                const serpResponse = await fetch(
+                  `https://serpapi.com/search?q=${encodeURIComponent(query)}&api_key=${SEARCH_API_KEY}&num=5`,
+                  { method: 'GET' }
+                );
+                
+                if (serpResponse.ok) {
+                  const data = await serpResponse.json();
+                  const results = data.organic_results || [];
+                  const snippets = results.map((r, i) => 
+                    `${i + 1}. ${r.title}\n${r.snippet}`
+                  ).join('\n\n');
+                  
+                  response = `Based on web search results for "${query}":\n\n${snippets}\n\nProcessing with AI...`;
+                }
+              } catch (err) {
+                console.warn('SerpAPI search failed:', err);
+              }
             }
-
-            if (apiResponse.ok) {
-              const data = await apiResponse.json();
-              response = data.content || '';
-            } else {
-              const errorText = await apiResponse.text();
-              webSearchError = `Google Search failed (${apiResponse.status}): ${errorText}`;
-              console.warn('Web search failed:', apiResponse.status, errorText);
+            
+            // Fallback: Use DuckDuckGo instant answer API (free, no key needed)
+            if (!response) {
+              try {
+                const ddgResponse = await fetch(
+                  `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json`,
+                  { method: 'GET' }
+                );
+                
+                if (ddgResponse.ok) {
+                  const data = await ddgResponse.json();
+                  const answer = data.Answer || data.AbstractText || '';
+                  const relatedTopics = data.RelatedTopics || [];
+                  
+                  if (answer) {
+                    response = answer;
+                  } else if (relatedTopics.length > 0) {
+                    const topics = relatedTopics
+                      .filter(t => t.Text)
+                      .slice(0, 3)
+                      .map(t => `• ${t.Text}`)
+                      .join('\n');
+                    response = `Found related information:\n${topics}`;
+                  }
+                }
+              } catch (err) {
+                console.warn('DuckDuckGo search failed:', err);
+              }
+            }
+            
+            // If still no response, provide guidance
+            if (!response) {
+              response = `To search the web for answers, you can add VITE_SEARCH_API_KEY (SerpAPI) to your .env.local file for better results. Currently using free DuckDuckGo API which has limited results. For "${query}", please try asking more specific questions about Egyptian destinations, travel planning, or practical advice.`;
             }
           } catch (error) {
-            webSearchError = error.message || String(error);
-            console.warn('Web search failed:', error);
+            console.warn('Web search error:', error);
+            response = `Web search encountered an error: ${error.message}. Please try rephrasing your question.`;
           }
-        }
-
-        if (params.provider === 'web' && !response) {
-          return webSearchError
-            ? `I could not search the web yet. ${webSearchError}`
-            : 'Web search is not configured yet. Add GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_CX in Cloudflare Pages, then redeploy.';
         }
 
         // 1. Try Groq chat completions
