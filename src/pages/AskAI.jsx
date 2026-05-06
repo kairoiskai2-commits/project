@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { db } from '@/api/apiClient';
-import { addPlaceFromWikipedia } from '@/components/WikipediaService';
-import { Bot, Send, Loader2, Plus, User, Sparkles, Compass, Globe, Brain } from 'lucide-react';
+import { Bot, Send, Loader2, User, Sparkles, Compass, Globe } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -83,7 +82,6 @@ export default function AskAI() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [addingPlace, setAddingPlace] = useState(null);
   const [feature, setFeature] = useState('chat');
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
@@ -91,8 +89,7 @@ export default function AskAI() {
   const AI_FEATURES = [
     { id: 'chat', label: language === 'ar' ? 'EgyptAI' : 'EgyptAI', desc: language === 'ar' ? 'دردشة ذكية عن مصر' : 'Egypt-aware chat', icon: Sparkles },
     { id: 'planner', label: language === 'ar' ? 'مخطط الرحلات' : 'Trip Planner', desc: language === 'ar' ? 'خطط رحلتك بسرعة' : 'Build a quick plan', icon: Compass },
-    { id: 'story', label: language === 'ar' ? 'قصة مصرية' : 'Story Mode', desc: language === 'ar' ? 'انسج حكاية فرعونية' : 'Create a travel story', icon: Globe },
-    { id: 'wiki', label: 'Wikipedia', desc: language === 'ar' ? 'ابحث في ويكيبيديا' : 'Explore Egyptian facts', icon: Brain }
+    { id: 'story', label: language === 'ar' ? 'قصة مصرية' : 'Story Mode', desc: language === 'ar' ? 'انسج حكاية فرعونية' : 'Create a travel story', icon: Globe }
   ];
 
   useEffect(() => {
@@ -110,7 +107,7 @@ export default function AskAI() {
     setMessages(prev => [...prev, { role: 'user', content: msg }]);
     setLoading(true);
 
-    // Detect query language and search the proper Wikipedia domain
+    // Build the EgyptAI prompt and send it to the AI backend
     const detectWikiLang = (text) => {
       if (/[\u0600-\u06FF]/.test(text)) return 'ar'; // Arabic
       if (/[\u4E00-\u9FFF]/.test(text)) return 'zh'; // Chinese
@@ -135,30 +132,13 @@ export default function AskAI() {
       return 'en'; // Default to English
     };
 
-    const wikiLang = detectWikiLang(msg);
     const featurePrompt = {
       chat: language === 'ar' ? `أنت EgyptAI، خبير سياحة ومعلومات عن مصر. أجب على هذا السؤال باختصار ومفيد: ${msg}` : `You are EgyptAI, an expert on Egypt travel and culture. Answer this question clearly and helpfully: ${msg}`,
       planner: language === 'ar' ? `أنت EgyptAI، مساعد تخطيط رحلات. قدّم خطة رحلة سريعة في مصر بناءً على هذا الطلب: ${msg}` : `You are EgyptAI, a trip planning assistant. Give a short Egypt travel plan for: ${msg}`,
       story: language === 'ar' ? `أنت EgyptAI، تروي قصة سفرية مصرية ساحرة استنادًا إلى: ${msg}` : `You are EgyptAI, create a vivid Egyptian travel story from: ${msg}`,
-      wiki: msg,
     };
 
     let response = '';
-    let wikiDetails = null;
-    let wikiSearch = await db.integrations.External.wikipedia('search', { query: msg, lang: wikiLang });
-
-    if (wikiSearch.success && wikiSearch.count > 0 && wikiSearch.results?.length > 0) {
-      const title = wikiSearch.results[0].title;
-      wikiDetails = await db.integrations.External.wikipedia('page', { title, lang: wikiLang });
-
-      if (wikiDetails.success && wikiDetails.extract) {
-        response = `${wikiDetails.extract}
-
-**${wikiDetails.title}**
-${wikiDetails.url ? `Source: ${wikiDetails.url}` : ''}`;
-      }
-    }
-
     if (!response) {
       const fallbackPrompt = featurePrompt[feature] || msg;
       const aiRes = await db.integrations.Core.InvokeLLM({
@@ -177,29 +157,12 @@ Provide a concise, engaging response for a traveler interested in Egypt. If poss
       }
     }
 
-    const placeNames = response.match(/\b(أهرامات|معبد|هرم|واحة|شاطئ|جبل|وادي|قلعة|متحف|مسجد|كنيسة|دير|بحيرة|نهر|صحراء|مدينة|قرية|منطقة|محافظة|Pyramids|Pyramid|Temple|Oasis|Desert|Nile|Valley|Museum|Sphinx|City|Temple|Luxor|Giza|Cairo|Alexandria|Aswan|Saqqara|Abu Simbel|Karnak|Philae)\s+[^\s.!?،؛]+/gi) || [];
-    const formattedResponse = response.replace(/\b(أهرامات|معبد|هرم|واحة|شاطئ|جبل|وادي|قلعة|متحف|مسجد|كنيسة|دير|بحيرة|نهر|صحراء|مدينة|قرية|منطقة|محافظة|Pyramids|Pyramid|Temple|Oasis|Desert|Nile|Valley|Museum|Sphinx|City|Temple|Luxor|Giza|Cairo|Alexandria|Aswan|Saqqara|Abu Simbel|Karnak|Philae)\s+[^\s.!?،؛]+/gi, (match) => `[${match}]`);
-
-    let places = placeNames.map(name => name.trim());
-    if (places.length === 0 && wikiDetails?.title) {
-      places = [wikiDetails.title];
-    }
-
     setMessages(prev => [...prev, {
       role: 'assistant',
-      content: formattedResponse.replace(/\[([^\]]+)\]/g, '**$1**'),
-      places,
+      content: response,
     }]);
     setLoading(false);
     inputRef.current?.focus();
-  };
-
-  const handleAddPlace = async (placeName) => {
-    setAddingPlace(placeName);
-    const result = await addPlaceFromWikipedia(placeName);
-    if (result) toast.success(`${tx('addSuccess', language)} — ${placeName}`);
-    else toast.error(tx('addError', language));
-    setAddingPlace(null);
   };
 
   const suggestions = SUGGESTED[language] || SUGGESTED.ar;
@@ -214,7 +177,7 @@ Provide a concise, engaging response for a traveler interested in Egypt. If poss
           </div>
           <div>
             <h1 className="text-2xl font-bold text-stone-100">{tx('title', language)}</h1>
-            <p className="text-stone-400 text-sm">EgyptAI · Powered by Wikipedia</p>
+            <p className="text-stone-400 text-sm">EgyptAI · Powered by AI</p>
           </div>
         </div>
       </div>
@@ -290,17 +253,6 @@ Provide a concise, engaging response for a traveler interested in Egypt. If poss
                       </div>
                     )}
                   </div>
-                  {msg.places?.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {msg.places.map((place, pi) => (
-                        <button key={pi} onClick={() => handleAddPlace(place)} disabled={addingPlace === place}
-                          className="flex items-center gap-1 text-xs px-3 py-1 rounded-full bg-amber-600 hover:bg-amber-500 text-stone-900 transition-all disabled:opacity-50">
-                          {addingPlace === place ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-                          {place}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
                 {msg.role === 'user' && (
                   <div className="w-8 h-8 rounded-full bg-stone-600 flex items-center justify-center flex-shrink-0">
