@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { db } from '@/api/apiClient';
 import { addPlaceFromWikipedia } from '@/components/WikipediaService';
-import { Bot, Send, Loader2, Plus, User } from 'lucide-react';
+import { Bot, Send, Loader2, Plus, User, Sparkles, Compass, Globe, Brain } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -84,8 +84,16 @@ export default function AskAI() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [addingPlace, setAddingPlace] = useState(null);
+  const [feature, setFeature] = useState('chat');
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
+
+  const AI_FEATURES = [
+    { id: 'chat', label: language === 'ar' ? 'EgyptAI' : 'EgyptAI', desc: language === 'ar' ? 'دردشة ذكية عن مصر' : 'Egypt-aware chat', icon: Sparkles },
+    { id: 'planner', label: language === 'ar' ? 'مخطط الرحلات' : 'Trip Planner', desc: language === 'ar' ? 'خطط رحلتك بسرعة' : 'Build a quick plan', icon: Compass },
+    { id: 'story', label: language === 'ar' ? 'قصة مصرية' : 'Story Mode', desc: language === 'ar' ? 'انسج حكاية فرعونية' : 'Create a travel story', icon: Globe },
+    { id: 'wiki', label: 'Wikipedia', desc: language === 'ar' ? 'ابحث في ويكيبيديا' : 'Explore Egyptian facts', icon: Brain }
+  ];
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -128,9 +136,16 @@ export default function AskAI() {
     };
 
     const wikiLang = detectWikiLang(msg);
-    const wikiSearch = await db.integrations.External.wikipedia('search', { query: msg, lang: wikiLang });
+    const featurePrompt = {
+      chat: language === 'ar' ? `أنت EgyptAI، خبير سياحة ومعلومات عن مصر. أجب على هذا السؤال باختصار ومفيد: ${msg}` : `You are EgyptAI, an expert on Egypt travel and culture. Answer this question clearly and helpfully: ${msg}`,
+      planner: language === 'ar' ? `أنت EgyptAI، مساعد تخطيط رحلات. قدّم خطة رحلة سريعة في مصر بناءً على هذا الطلب: ${msg}` : `You are EgyptAI, a trip planning assistant. Give a short Egypt travel plan for: ${msg}`,
+      story: language === 'ar' ? `أنت EgyptAI، تروي قصة سفرية مصرية ساحرة استنادًا إلى: ${msg}` : `You are EgyptAI, create a vivid Egyptian travel story from: ${msg}`,
+      wiki: msg,
+    };
+
     let response = '';
     let wikiDetails = null;
+    let wikiSearch = await db.integrations.External.wikipedia('search', { query: msg, lang: wikiLang });
 
     if (wikiSearch.success && wikiSearch.count > 0 && wikiSearch.results?.length > 0) {
       const title = wikiSearch.results[0].title;
@@ -141,11 +156,25 @@ export default function AskAI() {
 
 **${wikiDetails.title}**
 ${wikiDetails.url ? `Source: ${wikiDetails.url}` : ''}`;
-      } else {
-        response = `No detailed information found for "${msg}". Try another Egyptian place.`;
       }
-    } else {
-      response = `No information found for "${msg}". Try searching for Egyptian places like "Pyramids of Giza" or "Luxor Temple".`;
+    }
+
+    if (!response) {
+      const fallbackPrompt = featurePrompt[feature] || msg;
+      const aiRes = await db.integrations.Core.InvokeLLM({
+        prompt: `${fallbackPrompt}
+
+Provide a concise, engaging response for a traveler interested in Egypt. If possible, include travel tips, cultural notes, and interesting facts.
+`,
+      });
+
+      if (aiRes && aiRes.text) {
+        response = aiRes.text;
+      } else {
+        response = language === 'ar'
+          ? `لم يتم العثور على نتائج ل"${msg}". حاول عنواناً آخر مثل "أهرامات الجيزة" أو "معبد الكرنك".`
+          : `No results found for "${msg}". Try another query like "Pyramids of Giza" or "Luxor Temple".`;
+      }
     }
 
     const placeNames = response.match(/\b(أهرامات|معبد|هرم|واحة|شاطئ|جبل|وادي|قلعة|متحف|مسجد|كنيسة|دير|بحيرة|نهر|صحراء|مدينة|قرية|منطقة|محافظة|Pyramids|Pyramid|Temple|Oasis|Desert|Nile|Valley|Museum|Sphinx|City|Temple|Luxor|Giza|Cairo|Alexandria|Aswan|Saqqara|Abu Simbel|Karnak|Philae)\s+[^\s.!?،؛]+/gi) || [];
@@ -185,8 +214,35 @@ ${wikiDetails.url ? `Source: ${wikiDetails.url}` : ''}`;
           </div>
           <div>
             <h1 className="text-2xl font-bold text-stone-100">{tx('title', language)}</h1>
-            <p className="text-stone-400 text-sm">Powered by Wikipedia</p>
+            <p className="text-stone-400 text-sm">EgyptAI · Powered by Wikipedia</p>
           </div>
+        </div>
+      </div>
+
+      <div className="px-4 py-4 border-b border-stone-700">
+        <div className="max-w-6xl mx-auto grid gap-3 sm:grid-cols-4">
+          {AI_FEATURES.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setFeature(item.id)}
+                className={`rounded-2xl border p-4 text-left transition-all ${feature === item.id ? 'border-amber-400 bg-amber-500/10 shadow-[0_0_0_1px_rgba(245,158,11,0.2)]' : 'border-stone-700 bg-stone-900 hover:border-stone-500'}`}>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-2xl bg-stone-800 flex items-center justify-center text-amber-400">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-stone-100">{item.label}</p>
+                    <p className="text-xs text-stone-500">{item.desc}</p>
+                  </div>
+                </div>
+                {feature === item.id && (
+                  <p className="text-xs text-amber-200">{language === 'ar' ? 'مفعّل' : 'Active'}</p>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 

@@ -264,6 +264,19 @@ const createLocalUser = async ({ email, password, fullName }) => {
   return newUser
 }
 
+const createGuestUser = async () => {
+  const guestId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `guest-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const guestName = `Guest ${guestId.slice(-5).toUpperCase()}`
+  return {
+    id: guestId,
+    email: null,
+    fullName: guestName,
+    role: 'guest',
+    isGuest: true,
+    createdAt: new Date().toISOString(),
+  }
+}
+
 const authenticateLocalUser = async ({ email, password }) => {
   const db = await loadDatabase()
   if (!db) {
@@ -309,7 +322,7 @@ const auth = {
   isAuthenticated: async () => {
     try {
       const user = getSessionUser()
-      return !!user && !!user.id && !!user.email
+      return !!user && !!user.id && (!!user.email || !!user.isGuest)
     } catch {
       clearSession()
       return false
@@ -318,7 +331,11 @@ const auth = {
   me: async () => {
     try {
       const user = getSessionUser()
-      if (user && user.id && user.email) {
+      if (user && user.id && (user.email || user.isGuest)) {
+        if (user.isGuest) {
+          return user
+        }
+
         // Get full user record from database for role
         const db = await loadDatabase()
         if (db && db.users) {
@@ -358,6 +375,11 @@ const auth = {
       role: user.role,
       createdAt: user.createdAt,
     })
+    return { user }
+  },
+  guestLogin: async () => {
+    const user = await createGuestUser()
+    setSessionUser(user)
     return { user }
   },
   logout: async () => {
@@ -768,7 +790,36 @@ const integrations = {
           }
         }
 
-        // 3. Try Hugging Face with better model
+        // 3. Try Pollinations-style fallback or transformers API
+        const POLLINATIONS_API_KEY = import.meta.env.VITE_POLLINATIONS_API_KEY;
+        const POLLINATIONS_API_URL = import.meta.env.VITE_POLLINATIONS_API_URL || 'https://api.pollinations.ai/transformers';
+        if (POLLINATIONS_API_URL && !response) {
+          try {
+            const apiResponse = await fetch(POLLINATIONS_API_URL, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(POLLINATIONS_API_KEY ? { 'Authorization': `Bearer ${POLLINATIONS_API_KEY}` } : {}),
+              },
+              body: JSON.stringify({
+                inputs: prompt,
+                parameters: {
+                  max_new_tokens: params.max_tokens || 500,
+                  temperature: params.temperature || 0.7,
+                },
+              }),
+            });
+
+            if (apiResponse.ok) {
+              const data = await apiResponse.json();
+              response = data?.generated_text || data?.output || data?.text || data?.result || '';
+            }
+          } catch (error) {
+            console.warn('Pollinations fallback failed:', error);
+          }
+        }
+
+        // 4. Try Hugging Face with better model
         const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
         if (hasUsableApiKey(HUGGINGFACE_API_KEY) && !response) {
           try {

@@ -69,6 +69,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const guestLogin = async () => {
+    try {
+      setAuthError(null);
+      setIsLoadingAuth(true);
+
+      await apiClient.auth.guestLogin();
+      const currentUser = await apiClient.auth.me();
+      setUser(currentUser);
+      setIsAuthenticated(true);
+      return currentUser;
+    } catch (error) {
+      const formatted = formatError(error);
+      setAuthError(formatted);
+      setIsAuthenticated(false);
+      throw formatted;
+    } finally {
+      setIsLoadingAuth(false);
+      setAuthChecked(true);
+    }
+  };
+
   const signup = async (email, password, fullName) => {
     try {
       setAuthError(null);
@@ -117,6 +138,7 @@ export const AuthProvider = ({ children }) => {
     authError,
     authChecked,
     login,
+    guestLogin,
     signup,
     logout,
     checkUserAuth,

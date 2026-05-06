@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, guestLogin } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -32,6 +32,20 @@ export default function Login() {
       navigate('/');
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    setError('');
+    setLoading(true);
+
+    try {
+      await guestLogin();
+      navigate('/');
+    } catch (err) {
+      setError(err.message || 'Guest login failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -247,8 +261,17 @@ export default function Login() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.9 }}
-                className="text-center"
+                className="text-center space-y-3"
               >
+                <Button
+                  type="button"
+                  onClick={handleGuestLogin}
+                  disabled={loading}
+                  className="w-full h-12 text-[#1f1f1f] bg-amber-300 hover:bg-amber-400 font-bold text-base transition-all"
+                  style={{ boxShadow: '0 0 20px rgba(249, 115, 22, 0.25)' }}
+                >
+                  <Zap className="w-4 h-4 mr-2 inline" /> Continue as Guest
+                </Button>
                 <Link
                   to="/signup"
                   className="inline-flex items-center gap-2 text-[#c9963a] hover:text-[#f0c060] font-semibold transition-colors group"

@@ -383,19 +383,18 @@ export default function Header() {
 
                 {/* Footer */}
                 <div className="p-4 border-t border-stone-700">
-                  {!user || !user.id || !user.email ? (
+                  {!user || !user.id ? (
                     <button onClick={() => { db.auth.redirectToLogin(); setMobileOpen(false); }}
                       className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-stone-900 text-sm font-bold"
                       style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 12px rgba(201,150,58,0.4)' }}>
                       <Zap className="w-4 h-4" /> {t('login')}
                     </button>
-                  ) : user.role === 'admin' && (
-                    <Link to={createPageUrl('Admin')}
-                      onClick={() => setMobileOpen(false)}
+                  ) : (
+                    <button onClick={() => { logout(); setMobileOpen(false); }}
                       className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-stone-900 text-sm font-bold"
                       style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 12px rgba(201,150,58,0.4)' }}>
-                      <Shield className="w-4 h-4" /> Admin
-                    </Link>
+                      <LogOut className="w-4 h-4" /> {user.isGuest ? 'Sign Out' : 'Logout'}
+                    </button>
                   )}
                 </div>
               </div>
@@ -448,7 +447,7 @@ export default function Header() {
           </div>
 
           {/* User / Login */}
-          {user && user.id && user.email ? (
+          {user && user.id ? (
             <div className="hidden sm:flex items-center gap-2">
               {user.role === 'admin' && (
                 <Link to={createPageUrl('Admin')}
@@ -461,9 +460,9 @@ export default function Header() {
                 className="flex items-center gap-1.5 px-2 py-1 rounded-xl hover:bg-[rgba(201,150,58,0.08)] transition-all">
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black"
                   style={{ background: 'linear-gradient(135deg,#c9963a,#7a5c20)', boxShadow: '0 0 8px rgba(201,150,58,0.5)' }}>
-                  {user.fullName?.[0]?.toUpperCase() || user.full_name?.[0]?.toUpperCase() || '?'}
+                  {user.fullName?.[0]?.toUpperCase() || user.full_name?.[0]?.toUpperCase() || 'G'}
                 </div>
-                <span className="text-xs font-bold text-stone-400 max-w-[60px] truncate">{user.fullName?.split(' ')[0] || user.full_name?.split(' ')[0] || 'Me'}</span>
+                <span className="text-xs font-bold text-stone-400 max-w-[60px] truncate">{user.fullName?.split(' ')[0] || user.full_name?.split(' ')[0] || (user.isGuest ? 'Guest' : 'Me')}</span>
               </Link>
             </div>
           ) : (
