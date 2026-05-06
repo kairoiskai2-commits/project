@@ -1,7 +1,30 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// @ts-nocheck
 import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { db } from '@/api/apiClient';
-import { Bot, Send, Loader2, User, Sparkles, Compass, Globe } from 'lucide-react';
+import {
+  Bot,
+  Send,
+  Loader2,
+  User,
+  Sparkles,
+  Compass,
+  Globe,
+  Calendar,
+  DollarSign,
+  Luggage,
+  Users,
+  Shield,
+  Star,
+  Trophy,
+  Cloud,
+  Camera,
+  BookOpen,
+  Ticket,
+  MapPin,
+  Brain
+} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -88,8 +111,54 @@ export default function AskAI() {
 
   const AI_FEATURES = [
     { id: 'chat', label: language === 'ar' ? 'EgyptAI' : 'EgyptAI', desc: language === 'ar' ? 'دردشة ذكية عن مصر' : 'Egypt-aware chat', icon: Sparkles },
+
     { id: 'planner', label: language === 'ar' ? 'مخطط الرحلات' : 'Trip Planner', desc: language === 'ar' ? 'خطط رحلتك بسرعة' : 'Build a quick plan', icon: Compass },
-    { id: 'story', label: language === 'ar' ? 'قصة مصرية' : 'Story Mode', desc: language === 'ar' ? 'انسج حكاية فرعونية' : 'Create a travel story', icon: Globe }
+    { id: 'story', label: language === 'ar' ? 'قصة مصرية' : 'Story Mode', desc: language === 'ar' ? 'انسج حكاية فرعونية' : 'Create a travel story', icon: Globe },
+
+    { id: 'itinerary7', label: language === 'ar' ? '7 أيام' : '7 Days', desc: language === 'ar' ? 'برنامج أسبوع كامل' : 'Full week itinerary', icon: Calendar },
+    { id: 'itinerary3', label: language === 'ar' ? '3 أيام' : '3 Days', desc: language === 'ar' ? 'سريع ومركّز' : 'Fast and focused', icon: Calendar },
+    { id: 'itinerary14', label: language === 'ar' ? '14 يوم' : '14 Days', desc: language === 'ar' ? 'رحلة مطوّلة' : 'Long trip itinerary', icon: Calendar },
+
+    { id: 'budget', label: language === 'ar' ? 'ميزانية واقعية' : 'Budget', desc: language === 'ar' ? 'تكلفة يوم بيوم' : 'Daily cost estimate', icon: DollarSign },
+    { id: 'packing', label: language === 'ar' ? 'قائمة تعبئة' : 'Packing', desc: language === 'ar' ? 'حقيبتك جاهزة' : 'Your bag checklist', icon: Luggage },
+    { id: 'kids', label: language === 'ar' ? 'للعائلات' : 'Family', desc: language === 'ar' ? 'أنشطة مناسبة للأطفال' : 'Kid-friendly ideas', icon: Users },
+    { id: 'solo', label: language === 'ar' ? 'للرحّالة' : 'Solo', desc: language === 'ar' ? 'نصائح للأمان والتنقّل' : 'Safety + navigation tips', icon: Shield },
+
+    { id: 'safety', label: language === 'ar' ? 'أمان' : 'Safety', desc: language === 'ar' ? 'نصائح وإجراءات' : 'Practical safety steps', icon: Shield },
+    { id: 'etiquette', label: language === 'ar' ? 'آداب وزيّ' : 'Etiquette', desc: language === 'ar' ? 'كيف تتصرف باحترام' : 'How to be respectful', icon: Star },
+    { id: 'best_time', label: language === 'ar' ? 'أفضل وقت' : 'Best Time', desc: language === 'ar' ? 'متى تزور؟' : 'When to go?', icon: Trophy },
+
+    { id: 'weather_tip', label: language === 'ar' ? 'طقس وخطة' : 'Weather Tip', desc: language === 'ar' ? 'ماذا تفعل بالحر/البرد' : 'Plan for heat/cold', icon: Cloud },
+    { id: 'photo_tips', label: language === 'ar' ? 'تصوير' : 'Photo Tips', desc: language === 'ar' ? 'لقطات أنيقة' : 'Get better shots', icon: Camera },
+
+    { id: 'quiz', label: language === 'ar' ? 'اختبار معلومات' : 'Quiz', desc: language === 'ar' ? 'أسئلة + إجابات' : 'Questions + answers', icon: BookOpen },
+    { id: 'trivia', label: language === 'ar' ? 'حقائق سريعة' : 'Trivia', desc: language === 'ar' ? '10 حقائق عن مكان' : '10 facts about a place', icon: Sparkles },
+
+    { id: 'language_phrases', label: language === 'ar' ? 'عبارات' : 'Phrases', desc: language === 'ar' ? 'عبارات عربية/إنجليزية' : 'Arabic/English phrases', icon: Globe },
+    { id: 'currency_tips', label: language === 'ar' ? 'نصائح عملات' : 'Currency', desc: language === 'ar' ? 'دفع وتوفير' : 'Pay smart', icon: DollarSign },
+
+    { id: 'museum_map', label: language === 'ar' ? 'خريطة متحف' : 'Museum Route', desc: language === 'ar' ? 'أفضل مسار داخل المتحف' : 'Optimal museum route', icon: Map },
+    { id: 'temple_route', label: language === 'ar' ? 'مسار معابد' : 'Temple Route', desc: language === 'ar' ? 'ترتيب زيارة المعابد' : 'Temple visiting order', icon: Navigation },
+
+    { id: 'food_guide', label: language === 'ar' ? 'دليل الأكل' : 'Food Guide', desc: language === 'ar' ? 'ماذا تأكل قرب كل مكان' : 'What to eat nearby', icon: Ticket },
+    { id: 'halal', label: language === 'ar' ? 'خيارات حلال' : 'Halal', desc: language === 'ar' ? 'مقترحات طعام' : 'Food suggestions', icon: Shield },
+
+    { id: 'accessibility', label: language === 'ar' ? 'سهولة الوصول' : 'Accessibility', desc: language === 'ar' ? 'خطة بدون تعب' : 'Low-effort plan', icon: Users },
+    { id: 'rain_plan', label: language === 'ar' ? 'خطة أمطار' : 'Rain Plan', desc: language === 'ar' ? 'أنشطة داخلية' : 'Indoor activities', icon: Cloud },
+
+    { id: 'desert_plan', label: language === 'ar' ? 'الصحراء' : 'Desert Plan', desc: language === 'ar' ? 'Siwa / White Desert أفكار' : 'Siwa / White Desert', icon: Trophy },
+    { id: 'nile_plan', label: language === 'ar' ? 'النيل' : 'Nile Plan', desc: language === 'ar' ? 'خيارات على ضفاف النيل' : 'Nile-side ideas', icon: MapPin },
+
+    { id: 'market_guide', label: language === 'ar' ? 'الأسواق' : 'Markets', desc: language === 'ar' ? 'تسوق ذكي' : 'Smart shopping', icon: Star },
+    { id: 'shopping_budget', label: language === 'ar' ? 'تسوق بميزانية' : 'Shopping Budget', desc: language === 'ar' ? 'كم تصرف؟ ماذا تشتري؟' : 'What to buy + cost', icon: DollarSign },
+
+    { id: 'complaint_email', label: language === 'ar' ? 'رسالة' : 'Message Draft', desc: language === 'ar' ? 'اكتب رسالة طلب/شكوى' : 'Draft an email/message', icon: Brain },
+    { id: 'travel_notes', label: language === 'ar' ? 'ملاحظات رحلتك' : 'Travel Notes', desc: language === 'ar' ? 'قالب يومي للتدوين' : 'Daily journaling template', icon: BookOpen },
+
+    { id: 'memory', label: language === 'ar' ? 'ذكريات' : 'Memory', desc: language === 'ar' ? 'حوّل يومك لقصة' : 'Turn your day into text', icon: Sparkles },
+    { id: 'review', label: language === 'ar' ? 'مراجعة' : 'Review', desc: language === 'ar' ? 'اكتب رأي سريع للمكان' : 'Write a quick review', icon: Star },
+
+    { id: 'custom', label: language === 'ar' ? 'مخصص' : 'Custom', desc: language === 'ar' ? 'اطلب ما تريد بالضبط' : 'You choose the rules', icon: Brain },
   ];
 
   useEffect(() => {
@@ -133,28 +202,76 @@ export default function AskAI() {
     };
 
     const featurePrompt = {
-      chat: language === 'ar' ? `أنت EgyptAI، خبير سياحة ومعلومات عن مصر. أجب على هذا السؤال باختصار ومفيد: ${msg}` : `You are EgyptAI, an expert on Egypt travel and culture. Answer this question clearly and helpfully: ${msg}`,
-      planner: language === 'ar' ? `أنت EgyptAI، مساعد تخطيط رحلات. قدّم خطة رحلة سريعة في مصر بناءً على هذا الطلب: ${msg}` : `You are EgyptAI, a trip planning assistant. Give a short Egypt travel plan for: ${msg}`,
-      story: language === 'ar' ? `أنت EgyptAI، تروي قصة سفرية مصرية ساحرة استنادًا إلى: ${msg}` : `You are EgyptAI, create a vivid Egyptian travel story from: ${msg}`,
+      chat: language === 'ar' ? `أنت EgyptAI. رد بشكل واضح ومفيد عن مصر: ${msg}` : `You are EgyptAI. Answer clearly and helpfully about Egypt: ${msg}`,
+
+      planner: language === 'ar' ? `أنت EgyptAI، مساعد تخطيط رحلات. اكتب خطة سريعة ومفيدة في مصر: ${msg}` : `You are EgyptAI. Write a short, useful trip plan in Egypt: ${msg}`,
+
+      story: language === 'ar' ? `أنت EgyptAI، اكتب قصة سفر مصرية مشوقة من هذا الطلب: ${msg}` : `You are EgyptAI. Write a vivid Egyptian travel story from: ${msg}`,
+
+      itinerary7: language === 'ar' ? `خطط رحلة 7 أيام في مصر. ${msg}` : `Plan a 7-day trip in Egypt. ${msg}`,
+      itinerary3: language === 'ar' ? `خطط رحلة 3 أيام في مصر. ${msg}` : `Plan a 3-day trip in Egypt. ${msg}`,
+      itinerary14: language === 'ar' ? `خطط رحلة 14 يوم في مصر. ${msg}` : `Plan a 14-day trip in Egypt. ${msg}`,
+
+      budget: language === 'ar' ? `قدّم ميزانية واقعية لرحلة في مصر: ${msg}. اعطِ تقدير يومي + خيارات اقتصادية/متوسطة/مميزة.` : `Give a realistic Egypt trip budget for: ${msg}. Provide daily estimates + budget/mid/premium options.`,
+      packing: language === 'ar' ? `اكتب قائمة تعبئة دقيقة لرحلة في مصر. ${msg}` : `Write a detailed packing list for an Egypt trip. ${msg}`,
+
+      kids: language === 'ar' ? `خطط مناسبة للأطفال. ${msg} - اجعلها قصيرة وسهلة.` : `Kid-friendly plan. ${msg} - keep it easy and safe.`,
+      solo: language === 'ar' ? `نصائح رحّالة منفرد مع أمان وتنقّل. ${msg}` : `Solo traveler safety + logistics tips. ${msg}`,
+
+      safety: language === 'ar' ? `قدّم نصائح أمان عملية للمسافر في مصر. ${msg}` : `Practical safety tips for travelers in Egypt. ${msg}`,
+      etiquette: language === 'ar' ? `اكتب آداب واحترام ثقافي وزي مناسب. ${msg}` : `Cultural etiquette and appropriate dress. ${msg}`,
+      best_time: language === 'ar' ? `اكتب أفضل وقت للزيارة حسب المكان/النشاط. ${msg}` : `Best time to visit based on the place/activity. ${msg}`,
+
+      weather_tip: language === 'ar' ? `نصيحة طقس وتخطيط بالحر/البرد. ${msg}` : `Weather-focused travel advice. ${msg}`,
+      photo_tips: language === 'ar' ? `نصائح تصوير لمكان/منطقة في مصر: ${msg}` : `Photography tips for Egypt: ${msg}`,
+
+      quiz: language === 'ar' ? `حوّل هذا الموضوع إلى اختبار (10 أسئلة) مع الإجابات: ${msg}` : `Turn this topic into a 10-question quiz with answers: ${msg}`,
+      trivia: language === 'ar' ? `اكتب 10 حقائق سريعة عن: ${msg}` : `Give 10 quick facts about: ${msg}`,
+
+      language_phrases: language === 'ar' ? `قدّم عبارات عربية + نطق تقريبي + ترجمة إنجليزية لموقف سياحي: ${msg}` : `Provide Arabic phrases + approximate pronunciation + English translation for: ${msg}`,
+      currency_tips: language === 'ar' ? `نصائح عملات ودفع في مصر: ${msg}` : `Currency/payment tips for Egypt: ${msg}`,
+
+      museum_map: language === 'ar' ? `اكتب مسار منطقي داخل متحف: ${msg}. رتبه على شكل مراحل + مدة.` : `Create an optimal museum route for: ${msg}. Provide stages + durations.`,
+      temple_route: language === 'ar' ? `ترتيب زيارة معابد/آثار: ${msg}. اجعله منظمة وواقعية.` : `Order for visiting temples/attractions: ${msg}. Make it realistic and organized.`,
+
+      food_guide: language === 'ar' ? `دليل أكل: ماذا تأكل قرب الأماكن المذكورة؟ ${msg}` : `Food guide: what to eat near the places you mention? ${msg}`,
+      halal: language === 'ar' ? `اقترح خيارات طعام حلال في مصر لطلب: ${msg}` : `Suggest halal food options in Egypt for: ${msg}`,
+
+      accessibility: language === 'ar' ? `خطة سهلة الوصول (أقل مشي): ${msg}` : `Accessibility-friendly low-effort plan for: ${msg}`,
+      rain_plan: language === 'ar' ? `خطة بديلة للأجواء الممطرة/السيئة: ${msg} (أنشطة داخلية)` : `Rain/poor-weather alternative plan: ${msg} (indoor activities)`,
+
+      desert_plan: language === 'ar' ? `خطة للصحراء/واحات (سيوا/الصحراء البيضاء): ${msg}` : `Desert/oasis plan (Siwa/White Desert): ${msg}`,
+      nile_plan: language === 'ar' ? `خطة على النيل: ${msg}` : `Nile-focused plan: ${msg}`,
+
+      market_guide: language === 'ar' ? `دليل أسواق وتفاوض باحترام: ${msg}` : `Market guide + respectful bargaining tips: ${msg}`,
+      shopping_budget: language === 'ar' ? `تسوق بميزانية: ${msg}. ما الذي تشتريه وكم تقريباً؟` : `Shopping with a budget: ${msg}. What to buy + estimate?`,
+
+      complaint_email: language === 'ar' ? `اكتب رسالة قصيرة (طلب/شكوى) بالأسلوب المناسب: ${msg}` : `Draft a short message (request/complaint) with the right tone: ${msg}`,
+      travel_notes: language === 'ar' ? `قدّم قالب ملاحظات يومية لرحلتك: ${msg}` : `Provide a daily travel notes template for: ${msg}`,
+
+      memory: language === 'ar' ? `حوّل ذكرى/يوم في مصر إلى نص جميل (5-7 جمل): ${msg}` : `Turn your Egypt memory/day into a nice text (5-7 sentences): ${msg}`,
+      review: language === 'ar' ? `اكتب مراجعة قصيرة للمكان بصيغة محترمة: ${msg}` : `Write a short respectful place review: ${msg}`,
+
+      custom: language === 'ar' ? `نفّذ طلبك حرفياً: ${msg}. اتبع تعليماتي.` : `Follow my exact instructions: ${msg}.`,
     };
 
     let response = '';
-    if (!response) {
-      const fallbackPrompt = featurePrompt[feature] || msg;
-      const aiRes = await db.integrations.Core.InvokeLLM({
-        prompt: `${fallbackPrompt}
+    const fallbackPrompt = featurePrompt[feature] || featurePrompt.chat || msg;
 
-Provide a concise, engaging response for a traveler interested in Egypt. If possible, include travel tips, cultural notes, and interesting facts.
+    const aiRes = await db.integrations.Core.InvokeLLM({
+      provider: 'pollinations',
+      prompt: `${fallbackPrompt}
+
+Return the answer in ${language === 'ar' ? 'العربية' : 'English'}.
+Use short sections and bullet points when helpful.
 `,
-      });
+    });
 
-      if (aiRes && aiRes.text) {
-        response = aiRes.text;
-      } else {
-        response = language === 'ar'
-          ? `لم يتم العثور على نتائج ل"${msg}". حاول عنواناً آخر مثل "أهرامات الجيزة" أو "معبد الكرنك".`
-          : `No results found for "${msg}". Try another query like "Pyramids of Giza" or "Luxor Temple".`;
-      }
+    response = aiRes?.result || aiRes?.text || '';
+    if (!response) {
+      response = language === 'ar'
+        ? `لم يتم العثور على نتائج ل"${msg}". جرّب شيئاً مثل "أهرامات الجيزة" أو "معبد الكرنك".`
+        : `No results found for "${msg}". Try something like "Pyramids of Giza" or "Luxor Temple".`;
     }
 
     setMessages(prev => [...prev, {
